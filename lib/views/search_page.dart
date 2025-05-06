@@ -141,6 +141,54 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                           ),
                         ),
                         const Divider(height: 1),
+                        InkWell(
+                          onTap: () {
+                            Navigator.pop(context);
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (_) => const WordTestPage()),
+                            );
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                vertical: 16, horizontal: 16),
+                            child: const Row(
+                              children: [
+                                Icon(Icons.quiz, color: Colors.blue),
+                                SizedBox(width: 16),
+                                Expanded(
+                                    child: Text("単語テスト",
+                                        style: TextStyle(fontSize: 16))),
+                              ],
+                            ),
+                          ),
+                        ),
+                        const Divider(height: 1),
+                        InkWell(
+                          onTap: () {
+                            Navigator.pop(context);
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (_) => const CheckedQuestionsPage()),
+                            );
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                vertical: 16, horizontal: 16),
+                            child: const Row(
+                              children: [
+                                Icon(Icons.check_box, color: Colors.blue),
+                                SizedBox(width: 16),
+                                Expanded(
+                                    child: Text("単語チェック問題",
+                                        style: TextStyle(fontSize: 16))),
+                              ],
+                            ),
+                          ),
+                        ),
+                        const Divider(height: 1),
                         // 既存項目
                         InkWell(
                           onTap: () {
@@ -190,105 +238,56 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                             ),
                           ),
                         ),
-                        const Divider(height: 1),
-                        InkWell(
-                          onTap: () {
-                            Navigator.pop(context);
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (_) => const WordTestPage()),
-                            );
-                          },
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                                vertical: 16, horizontal: 16),
-                            child: const Row(
-                              children: [
-                                Icon(Icons.quiz, color: Colors.blue),
-                                SizedBox(width: 16),
-                                Expanded(
-                                    child: Text("単語テスト",
-                                        style: TextStyle(fontSize: 16))),
-                              ],
-                            ),
-                          ),
-                        ),
-                        const Divider(height: 1),
-                        InkWell(
-                          onTap: () {
-                            Navigator.pop(context);
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (_) => const CheckedQuestionsPage()),
-                            );
-                          },
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                                vertical: 16, horizontal: 16),
-                            child: const Row(
-                              children: [
-                                Icon(Icons.check_box, color: Colors.blue),
-                                SizedBox(width: 16),
-                                Expanded(
-                                    child: Text("単語チェック問題",
-                                        style: TextStyle(fontSize: 16))),
-                              ],
-                            ),
-                          ),
-                        ),
-                        const Divider(height: 1),
-                        InkWell(
-                          onTap: () {
-                            Navigator.pop(context);
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (_) => const JournalEntryQuizPage()),
-                            );
-                          },
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                                vertical: 16, horizontal: 16),
-                            child: const Row(
-                              children: [
-                                Icon(Icons.sort, color: Colors.blue),
-                                SizedBox(width: 16),
-                                Expanded(
-                                    child: Text("仕訳問題",
-                                        style: TextStyle(fontSize: 16))),
-                              ],
-                            ),
-                          ),
-                        ),
-                        const Divider(height: 1),
-                        // ★ 新規追加：設定項目
-                        // 例：SearchPageのメニュー表示部分（既存項目の後ろに追加）
-                        InkWell(
-                          onTap: () {
-                            Navigator.pop(context);
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (_) => const SettingsPage()),
-                            );
-                          },
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                                vertical: 16, horizontal: 16),
-                            child: const Row(
-                              children: [
-                                Icon(Icons.settings, color: Colors.blue),
-                                SizedBox(width: 16),
-                                Expanded(
-                                  child: Text("設定",
-                                      style: TextStyle(fontSize: 16)),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
+                        // InkWell(
+                        //   onTap: () {
+                        //     Navigator.pop(context);
+                        //     Navigator.push(
+                        //       context,
+                        //       MaterialPageRoute(
+                        //           builder: (_) => const JournalEntryQuizPage()),
+                        //     );
+                        //   },
+                        //   child: Container(
+                        //     padding: const EdgeInsets.symmetric(
+                        //         vertical: 16, horizontal: 16),
+                        //     child: const Row(
+                        //       children: [
+                        //         Icon(Icons.sort, color: Colors.blue),
+                        //         SizedBox(width: 16),
+                        //         Expanded(
+                        //             child: Text("仕訳問題",
+                        //                 style: TextStyle(fontSize: 16))),
+                        //       ],
+                        //     ),
+                        //   ),
+                        // ),
+                        // const Divider(height: 1),
+                        // // ★ 新規追加：設定項目
+                        // // 例：SearchPageのメニュー表示部分（既存項目の後ろに追加）
+                        // InkWell(
+                        //   onTap: () {
+                        //     Navigator.pop(context);
+                        //     Navigator.push(
+                        //       context,
+                        //       MaterialPageRoute(
+                        //           builder: (_) => const SettingsPage()),
+                        //     );
+                        //   },
+                        //   child: Container(
+                        //     padding: const EdgeInsets.symmetric(
+                        //         vertical: 16, horizontal: 16),
+                        //     child: const Row(
+                        //       children: [
+                        //         Icon(Icons.settings, color: Colors.blue),
+                        //         SizedBox(width: 16),
+                        //         Expanded(
+                        //           child: Text("設定",
+                        //               style: TextStyle(fontSize: 16)),
+                        //         ),
+                        //       ],
+                        //     ),
+                        //   ),
+                        // ),
 
                         const Divider(height: 1),
                         InkWell(
