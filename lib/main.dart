@@ -2345,7 +2345,8 @@ class SavedItemsPageState extends ConsumerState<SavedItemsPage> {
                                         ScaffoldMessenger.of(context)
                                             .showSnackBar(
                                           const SnackBar(
-                                            content: Text("既に単語チェック問題に登録されています。"),
+                                            content:
+                                                Text("既に単語チェック問題に登録されています。"),
                                           ),
                                         );
                                       } else {
@@ -2575,8 +2576,7 @@ class CategoryAssignmentSheet extends ConsumerStatefulWidget {
   const CategoryAssignmentSheet({super.key, required this.product});
 
   @override
-  CategoryAssignmentSheetState createState() =>
-      CategoryAssignmentSheetState();
+  CategoryAssignmentSheetState createState() => CategoryAssignmentSheetState();
 }
 
 class CategoryAssignmentSheetState
@@ -4104,7 +4104,7 @@ class CommonProductListView extends StatelessWidget {
     this.onRefresh,
     this.isReorderable = false,
     this.onReorder,
-  })  : assert(!isReorderable || onReorder != null,
+  }) : assert(!isReorderable || onReorder != null,
             'Reorderableの場合、onReorderは必須です');
 
   @override
