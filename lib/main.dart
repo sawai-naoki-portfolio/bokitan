@@ -1872,6 +1872,7 @@ class CheckedQuestionsPageState extends ConsumerState<CheckedQuestionsPage> {
 
   @override
   Widget build(BuildContext context) {
+    // チェック済みの単語（問題として登録された単語）のセットを取得
     final checked = ref.watch(checkedQuestionsProvider);
     final productsAsync = ref.watch(productsProvider);
 
@@ -1882,7 +1883,7 @@ class CheckedQuestionsPageState extends ConsumerState<CheckedQuestionsPage> {
       ),
       body: Stack(
         children: [
-          // 画面上部に固定の「問題出題」ボタンを表示
+          // 上部固定：チェック済みの単語が1件でもある場合のみ「問題出題」ボタンが活性状態となる
           Positioned(
             top: 16,
             left: 16,
@@ -1894,16 +1895,21 @@ class CheckedQuestionsPageState extends ConsumerState<CheckedQuestionsPage> {
                   borderRadius: BorderRadius.circular(30),
                 ),
               ),
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const CheckboxTestPage()),
-                );
-              },
+              // checked.isEmptyならonPressedがnullとなり、非活性状態になる
+              onPressed: checked.isNotEmpty
+                  ? () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const CheckboxTestPage(),
+                        ),
+                      );
+                    }
+                  : null,
               child: const Text("問題出題", style: TextStyle(fontSize: 18)),
             ),
           ),
-          // 下部のリスト表示部分。上部ボタン分の空間を確保するために Padding を使用
+          // 下部：チェック済みの単語リストを表示
           Padding(
             padding: const EdgeInsets.only(top: 80.0),
             child: Padding(
@@ -1912,13 +1918,13 @@ class CheckedQuestionsPageState extends ConsumerState<CheckedQuestionsPage> {
                 loading: () => const Center(child: CircularProgressIndicator()),
                 error: (error, _) => Center(child: Text("データ読み込みエラー: $error")),
                 data: (products) {
-                  // チェックされている商品のみフィルターする
-                  final filtered = products.where((p) => checked.contains(p.name)).toList();
+                  // ここではProductリストから、チェック済み（checkedに含まれる）商品を抽出
+                  final filtered =
+                      products.where((p) => checked.contains(p.name)).toList();
                   if (filtered.isEmpty) {
                     return const Center(child: Text("チェックされた問題はありません"));
                   }
                   if (_isSorting) {
-                    // 並び替えモードの場合
                     _sortedProducts ??= List<Product>.from(filtered);
                     return ReorderableListView.builder(
                       itemCount: _sortedProducts!.length,
@@ -1940,7 +1946,6 @@ class CheckedQuestionsPageState extends ConsumerState<CheckedQuestionsPage> {
                       },
                     );
                   } else {
-                    // 通常モード：各項目を SwipeToDeleteCard でラップして左スワイプ削除を実現
                     return ListView.builder(
                       itemCount: filtered.length,
                       itemBuilder: (context, index) {
@@ -1949,26 +1954,31 @@ class CheckedQuestionsPageState extends ConsumerState<CheckedQuestionsPage> {
                           keyValue: ValueKey(product.name),
                           onConfirm: () async {
                             return await showDialog<bool>(
-                              context: context,
-                              builder: (context) => AlertDialog(
-                                title: const Text("削除確認"),
-                                content: Text("${product.name} を削除してよろしいですか？"),
-                                actions: [
-                                  TextButton(
-                                    onPressed: () => Navigator.pop(context, false),
-                                    child: const Text("キャンセル"),
+                                  context: context,
+                                  builder: (context) => AlertDialog(
+                                    title: const Text("削除確認"),
+                                    content:
+                                        Text("${product.name} を削除してよろしいですか？"),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () =>
+                                            Navigator.pop(context, false),
+                                        child: const Text("キャンセル"),
+                                      ),
+                                      ElevatedButton(
+                                        onPressed: () =>
+                                            Navigator.pop(context, true),
+                                        child: const Text("削除"),
+                                      ),
+                                    ],
                                   ),
-                                  ElevatedButton(
-                                    onPressed: () => Navigator.pop(context, true),
-                                    child: const Text("削除"),
-                                  ),
-                                ],
-                              ),
-                            ) ??
+                                ) ??
                                 false;
                           },
                           onDismissed: () async {
-                            await ref.read(checkedQuestionsProvider.notifier).remove(product.name);
+                            await ref
+                                .read(checkedQuestionsProvider.notifier)
+                                .remove(product.name);
                           },
                           child: GestureDetector(
                             onLongPress: () {
@@ -2008,7 +2018,8 @@ class CheckedQuestionsPageState extends ConsumerState<CheckedQuestionsPage> {
                   Navigator.pop(context);
                   showModalBottomSheet(
                     context: context,
-                    builder: (context) => CategoryAssignmentSheet(product: product),
+                    builder: (context) =>
+                        CategoryAssignmentSheet(product: product),
                   );
                 },
               ),
@@ -2016,7 +2027,9 @@ class CheckedQuestionsPageState extends ConsumerState<CheckedQuestionsPage> {
                 leading: const Icon(Icons.delete),
                 title: const Text("削除"),
                 onTap: () async {
-                  await ref.read(checkedQuestionsProvider.notifier).remove(product.name);
+                  await ref
+                      .read(checkedQuestionsProvider.notifier)
+                      .remove(product.name);
                   Navigator.pop(context);
                 },
               ),
