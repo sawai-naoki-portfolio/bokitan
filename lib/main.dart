@@ -7,6 +7,90 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
 import 'package:math_expressions/math_expressions.dart';
 
+/// BuildContext の拡張として、画面サイズに基づいた各種サイズを返すヘルパー
+extension ResponsiveSizes on BuildContext {
+  /// 現在の画面サイズ（幅×高さ）
+  Size get screenSize => MediaQuery.of(this).size;
+
+  // ── パディング系 ──
+
+  double get paddingExtraSmall => screenSize.width * 0.01;
+
+  double get paddingSmall => screenSize.width * 0.02;
+
+  double get paddingMedium => screenSize.width * 0.04;
+
+  double get paddingLarge => screenSize.width * 0.06;
+
+  double get paddingExtraLarge => screenSize.width * 0.08;
+
+  // ── ボタン系 ──
+
+  double get buttonHeight => screenSize.height * 0.07;
+
+  double get buttonWidth => screenSize.width * 0.8;
+
+  // ── アイコン系 ──
+
+  double get iconSizeSmall => screenSize.width * 0.05;
+
+  double get iconSizeMedium => screenSize.width * 0.07;
+
+  double get iconSizeLarge => screenSize.width * 0.09;
+
+  // ── テキストフィールド系 ──
+
+  double get textFieldHeight => screenSize.height * 0.06;
+
+  // ── フォントサイズ系 ──
+
+  double get fontSizeExtraSmall => screenSize.width * 0.03;
+
+  double get fontSizeSmall => screenSize.width * 0.035;
+
+  double get fontSizeMedium => screenSize.width * 0.04;
+
+  double get fontSizeLarge => screenSize.width * 0.045;
+
+  double get fontSizeExtraLarge => screenSize.width * 0.05;
+
+  // ── SizedBox 用のスペース ──
+
+  SizedBox get verticalSpaceExtraSmall =>
+      SizedBox(height: screenSize.height * 0.01);
+
+  SizedBox get verticalSpaceSmall => SizedBox(height: screenSize.height * 0.02);
+
+  SizedBox get verticalSpaceMedium =>
+      SizedBox(height: screenSize.height * 0.03);
+
+  SizedBox get verticalSpaceLarge => SizedBox(height: screenSize.height * 0.05);
+
+  SizedBox get horizontalSpaceExtraSmall =>
+      SizedBox(width: screenSize.width * 0.01);
+
+  SizedBox get horizontalSpaceSmall => SizedBox(width: screenSize.width * 0.02);
+
+  SizedBox get horizontalSpaceMedium =>
+      SizedBox(width: screenSize.width * 0.03);
+
+  SizedBox get horizontalSpaceLarge => SizedBox(width: screenSize.width * 0.05);
+
+  // ── Divider 用のサイズ ──
+
+  /// Divider の高さ。ここでの「高さ」は Divider ウィジェット全体が占める垂直方向のスペース
+  double get dividerHeightExtraSmall => screenSize.height * 0.01;
+
+  double get dividerHeightSmall => screenSize.height * 0.015;
+
+  double get dividerHeightMedium => screenSize.height * 0.02;
+
+  double get dividerHeightLarge => screenSize.height * 0.025;
+
+  /// Divider の線の太さ（thickness）
+  double get dividerThickness => screenSize.width * 0.003;
+}
+
 class SwipeToDeleteCard extends StatelessWidget {
   final Widget child;
   final Key keyValue;
@@ -28,7 +112,7 @@ class SwipeToDeleteCard extends StatelessWidget {
       direction: DismissDirection.endToStart,
       background: Container(
         alignment: Alignment.centerRight,
-        padding: const EdgeInsets.symmetric(horizontal: 20),
+        padding: EdgeInsets.symmetric(horizontal: context.paddingMedium),
         color: Colors.red,
         child: const Icon(Icons.delete, color: Colors.white),
       ),
@@ -93,9 +177,9 @@ void showProductDialog(BuildContext context, Product product) {
                 Expanded(
                   child: Text(
                     product.name,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontWeight: FontWeight.bold,
-                      fontSize: 16,
+                      fontSize: context.fontSizeExtraLarge,
                     ),
                   ),
                 ),
@@ -113,7 +197,7 @@ void showProductDialog(BuildContext context, Product product) {
                   children: [
                     // 商品説明
                     Text(product.description),
-                    const SizedBox(height: 10),
+                    context.verticalSpaceMedium,
                     // 毎回最新の memo を反映する MemoDisplay を利用
                     MemoDisplay(product: product),
                   ],
@@ -164,7 +248,8 @@ class MemoDisplay extends StatelessWidget {
           if (memo.isNotEmpty) {
             return Text(
               "メモ: $memo",
-              style: const TextStyle(fontSize: 14, color: Colors.grey),
+              style: TextStyle(
+                  fontSize: context.fontSizeExtraSmall, color: Colors.grey),
             );
           }
           return const SizedBox();
@@ -330,11 +415,12 @@ class ProductCard extends StatelessWidget {
         ),
         title: Text(
           product.name,
-          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+          style: TextStyle(
+              fontWeight: FontWeight.bold, fontSize: context.fontSizeMedium),
         ),
         subtitle: Text(
           product.description,
-          style: const TextStyle(fontSize: 14),
+          style: TextStyle(fontSize: context.fontSizeSmall),
         ),
         trailing: trailing,
         onTap: onTap,
@@ -618,7 +704,7 @@ class CategoryItemWidget extends ConsumerWidget {
       },
       background: Container(
         alignment: Alignment.centerRight,
-        padding: const EdgeInsets.symmetric(horizontal: 20),
+        padding: EdgeInsets.symmetric(horizontal: context.paddingMedium),
         color: Colors.red,
         child: const Icon(Icons.delete, color: Colors.white),
       ),
@@ -634,7 +720,9 @@ class CategoryItemWidget extends ConsumerWidget {
         },
         child: Card(
           elevation: 4,
-          margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+          margin: EdgeInsets.symmetric(
+              vertical: context.paddingMedium,
+              horizontal: context.paddingMedium),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
@@ -646,14 +734,14 @@ class CategoryItemWidget extends ConsumerWidget {
             ),
             title: Text(
               product.name,
-              style: const TextStyle(
+              style: TextStyle(
                 fontWeight: FontWeight.bold,
-                fontSize: 16,
+                fontSize: context.fontSizeMedium,
               ),
             ),
             subtitle: Text(
               product.description,
-              style: const TextStyle(fontSize: 14),
+              style: TextStyle(fontSize: context.fontSizeMedium),
             ),
             onTap: () => showProductDialog(context, product),
           ),
@@ -687,7 +775,8 @@ class CategoryItemCard extends ConsumerWidget {
         // onTapは商品詳細ダイアログを表示する既存の処理を流用
         onTap: () => showProductDialog(context, product),
         // ProductCardの見た目は SearchPage と同じUI（CircleAvatar, タイトル, サブタイトル）
-        margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+        margin: EdgeInsets.symmetric(
+            vertical: context.paddingMedium, horizontal: context.paddingMedium),
       ),
     );
   }
@@ -713,7 +802,8 @@ class SavedItemCard extends ConsumerWidget {
       child: ProductCard(
         product: product,
         onTap: () => showProductDialog(context, product),
-        margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+        margin: EdgeInsets.symmetric(
+            vertical: context.paddingMedium, horizontal: context.paddingMedium),
       ),
     );
   }
@@ -881,7 +971,9 @@ class CategoryItemsPageState extends ConsumerState<CategoryItemsPage> {
             },
             child: ProductCard(
               product: product,
-              margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+              margin: EdgeInsets.symmetric(
+                  vertical: context.paddingExtraSmall,
+                  horizontal: context.paddingExtraSmall),
               onTap: () => showProductDialog(context, product),
             ),
           ),
@@ -1145,7 +1237,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                 backgroundColor: Colors.transparent,
                 builder: (context) {
                   return Container(
-                    margin: const EdgeInsets.all(16),
+                    margin: EdgeInsets.all(context.paddingMedium),
                     decoration: BoxDecoration(
                       color: Theme.of(context).cardColor,
                       borderRadius: BorderRadius.circular(16),
@@ -1160,12 +1252,13 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Padding(
-                          padding: EdgeInsets.all(16.0),
+                        Padding(
+                          padding: EdgeInsets.all(context.paddingSmall),
                           child: Text(
                             "メニュー",
                             style: TextStyle(
-                                fontSize: 18, fontWeight: FontWeight.bold),
+                                fontSize: context.fontSizeLarge,
+                                fontWeight: FontWeight.bold),
                           ),
                         ),
                         const Divider(height: 1),
@@ -1180,15 +1273,17 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                             );
                           },
                           child: Container(
-                            padding: const EdgeInsets.symmetric(
-                                vertical: 16, horizontal: 16),
-                            child: const Row(
+                            padding: EdgeInsets.symmetric(
+                                vertical: context.paddingMedium,
+                                horizontal: context.paddingSmall),
+                            child: Row(
                               children: [
-                                Icon(Icons.bookmark, color: Colors.blue),
-                                SizedBox(width: 16),
+                                const Icon(Icons.bookmark, color: Colors.blue),
+                                context.horizontalSpaceSmall,
                                 Expanded(
                                     child: Text("保存単語",
-                                        style: TextStyle(fontSize: 16))),
+                                        style: TextStyle(
+                                            fontSize: context.fontSizeMedium))),
                               ],
                             ),
                           ),
@@ -1205,15 +1300,17 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                             );
                           },
                           child: Container(
-                            padding: const EdgeInsets.symmetric(
-                                vertical: 16, horizontal: 16),
-                            child: const Row(
+                            padding: EdgeInsets.symmetric(
+                                vertical: context.paddingMedium,
+                                horizontal: context.paddingSmall),
+                            child: Row(
                               children: [
-                                Icon(Icons.folder, color: Colors.blue),
-                                SizedBox(width: 16),
+                                const Icon(Icons.folder, color: Colors.blue),
+                                context.horizontalSpaceMedium,
                                 Expanded(
                                     child: Text("カテゴリーリスト",
-                                        style: TextStyle(fontSize: 16))),
+                                        style: TextStyle(
+                                            fontSize: context.fontSizeMedium))),
                               ],
                             ),
                           ),
@@ -1229,15 +1326,17 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                             );
                           },
                           child: Container(
-                            padding: const EdgeInsets.symmetric(
-                                vertical: 16, horizontal: 16),
-                            child: const Row(
+                            padding: EdgeInsets.symmetric(
+                                vertical: context.paddingMedium,
+                                horizontal: context.paddingSmall),
+                            child: Row(
                               children: [
-                                Icon(Icons.quiz, color: Colors.blue),
-                                SizedBox(width: 16),
+                                const Icon(Icons.quiz, color: Colors.blue),
+                                context.horizontalSpaceMedium,
                                 Expanded(
                                     child: Text("単語テスト",
-                                        style: TextStyle(fontSize: 16))),
+                                        style: TextStyle(
+                                            fontSize: context.fontSizeMedium))),
                               ],
                             ),
                           ),
@@ -1253,15 +1352,17 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                             );
                           },
                           child: Container(
-                            padding: const EdgeInsets.symmetric(
-                                vertical: 16, horizontal: 16),
-                            child: const Row(
+                            padding: EdgeInsets.symmetric(
+                                vertical: context.paddingMedium,
+                                horizontal: context.paddingSmall),
+                            child: Row(
                               children: [
-                                Icon(Icons.check_box, color: Colors.blue),
-                                SizedBox(width: 16),
+                                const Icon(Icons.check_box, color: Colors.blue),
+                                context.horizontalSpaceMedium,
                                 Expanded(
                                     child: Text("単語チェック問題",
-                                        style: TextStyle(fontSize: 16))),
+                                        style: TextStyle(
+                                            fontSize: context.fontSizeMedium))),
                               ],
                             ),
                           ),
@@ -1277,7 +1378,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                         //     );
                         //   },
                         //   child: Container(
-                        //     padding: const EdgeInsets.symmetric(
+                        //     padding: EdgeInsets.symmetric(
                         //         vertical: 16, horizontal: 16),
                         //     child: const Row(
                         //       children: [
@@ -1285,7 +1386,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                         //         SizedBox(width: 16),
                         //         Expanded(
                         //             child: Text("仕訳問題",
-                        //                 style: TextStyle(fontSize: 16))),
+                        //                 style: TextStyle(fontSize: context.fontSizeMedium))),
                         //       ],
                         //     ),
                         //   ),
@@ -1302,7 +1403,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                         //     );
                         //   },
                         //   child: Container(
-                        //     padding: const EdgeInsets.symmetric(
+                        //     padding: EdgeInsets.symmetric(
                         //         vertical: 16, horizontal: 16),
                         //     child: const Row(
                         //       children: [
@@ -1310,7 +1411,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                         //         SizedBox(width: 16),
                         //         Expanded(
                         //           child: Text("設定",
-                        //               style: TextStyle(fontSize: 16)),
+                        //               style: TextStyle(fontSize: context.fontSizeMedium)),
                         //         ),
                         //       ],
                         //     ),
@@ -1328,15 +1429,17 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                             );
                           },
                           child: Container(
-                            padding: const EdgeInsets.symmetric(
-                                vertical: 16, horizontal: 16),
-                            child: const Row(
+                            padding: EdgeInsets.symmetric(
+                                vertical: context.paddingMedium,
+                                horizontal: context.paddingSmall),
+                            child: Row(
                               children: [
-                                Icon(Icons.list, color: Colors.blue),
-                                SizedBox(width: 16),
+                                const Icon(Icons.list, color: Colors.blue),
+                                context.horizontalSpaceMedium,
                                 Expanded(
                                     child: Text("単語一覧",
-                                        style: TextStyle(fontSize: 16))),
+                                        style: TextStyle(
+                                            fontSize: context.fontSizeMedium))),
                               ],
                             ),
                           ),
@@ -1357,7 +1460,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
           children: [
             // 検索入力フィールド
             Padding(
-              padding: const EdgeInsets.all(16.0),
+              padding: EdgeInsets.all(context.paddingMedium),
               child: TextField(
                 controller: _controller,
                 decoration: const InputDecoration(
@@ -1374,9 +1477,9 @@ class _SearchPageState extends ConsumerState<SearchPage> {
             ),
             // 単語リスト部分
             productsAsync.when(
-              loading: () => const Padding(
-                padding: EdgeInsets.symmetric(vertical: 40),
-                child: Center(child: CircularProgressIndicator()),
+              loading: () => Padding(
+                padding: EdgeInsets.symmetric(vertical: context.paddingMedium),
+                child: const Center(child: CircularProgressIndicator()),
               ),
               error: (error, _) => Center(child: Text('データ読み込みエラー: $error')),
               data: (products) {
@@ -1397,9 +1500,10 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                 }
 
                 if (filteredProducts.isEmpty) {
-                  return const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 40),
-                    child: Center(child: Text('一致する単語がありません')),
+                  return Padding(
+                    padding:
+                        EdgeInsets.symmetric(vertical: context.paddingMedium),
+                    child: const Center(child: Text('一致する単語がありません')),
                   );
                 }
 
@@ -1426,8 +1530,9 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                           },
                           child: ProductCard(
                             product: product,
-                            margin: const EdgeInsets.symmetric(
-                                vertical: 8, horizontal: 4),
+                            margin: EdgeInsets.symmetric(
+                                vertical: context.paddingMedium,
+                                horizontal: context.paddingMedium),
                             onTap: () => showProductDialog(context, product),
                           ),
                         );
@@ -1444,8 +1549,9 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                         },
                         child: ProductCard(
                           product: product,
-                          margin: const EdgeInsets.symmetric(
-                              vertical: 8, horizontal: 4),
+                          margin: EdgeInsets.symmetric(
+                              vertical: context.paddingExtraSmall,
+                              horizontal: context.paddingSmall),
                           onTap: () => showProductDialog(context, product),
                         ),
                       );
@@ -1492,19 +1598,20 @@ class _WordTestPageState extends ConsumerState<WordTestPage> {
           if (quiz.isEmpty) _generateQuiz(products);
           final currentQuestion = quiz[currentQuestionIndex];
           return Padding(
-            padding: const EdgeInsets.all(16.0),
+            padding: EdgeInsets.all(context.paddingMedium),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Text(
                   "問題 ${currentQuestionIndex + 1} / ${quiz.length}",
-                  style: const TextStyle(
-                      fontSize: 20, fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                      fontSize: context.fontSizeExtraLarge,
+                      fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 16),
                 Text(
                   "問題：${currentQuestion.product.description}",
-                  style: const TextStyle(fontSize: 18),
+                  style: TextStyle(fontSize: context.fontSizeMedium),
                 ),
                 const SizedBox(height: 24),
                 ...currentQuestion.options.map((option) {
@@ -1517,7 +1624,8 @@ class _WordTestPageState extends ConsumerState<WordTestPage> {
                     }
                   }
                   return Container(
-                    margin: const EdgeInsets.symmetric(vertical: 8),
+                    margin:
+                        EdgeInsets.symmetric(vertical: context.paddingSmall),
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
                         backgroundColor: btnColor,
@@ -1549,7 +1657,8 @@ class _WordTestPageState extends ConsumerState<WordTestPage> {
                               }
                             }
                           : null,
-                      child: Text(option, style: const TextStyle(fontSize: 16)),
+                      child: Text(option,
+                          style: TextStyle(fontSize: context.fontSizeMedium)),
                     ),
                   );
                 }),
@@ -1560,7 +1669,7 @@ class _WordTestPageState extends ConsumerState<WordTestPage> {
                         ? "正解！"
                         : "不正解。正解は ${currentQuestion.product.name} です。",
                     style: TextStyle(
-                      fontSize: 18,
+                      fontSize: context.fontSizeMedium,
                       color:
                           currentQuestion.isCorrect ? Colors.green : Colors.red,
                     ),
@@ -1595,13 +1704,13 @@ class WordTestResultPage extends ConsumerWidget {
         title: const Text("テスト結果"),
       ),
       body: Padding(
-        padding: const EdgeInsets.all(20.0),
+        padding: EdgeInsets.all(context.paddingSmall),
         child: Column(
           children: [
             Text(
               "結果：$correctCount / ${quiz.length} 問正解",
-              style: const TextStyle(
-                fontSize: 26,
+              style: TextStyle(
+                fontSize: context.fontSizeExtraLarge,
                 fontWeight: FontWeight.bold,
                 color: Colors.blueAccent,
               ),
@@ -1643,26 +1752,28 @@ class WordTestResultPage extends ConsumerWidget {
                                     end: Alignment.bottomRight,
                                   ),
                           ),
-                          padding: const EdgeInsets.all(20),
+                          padding: EdgeInsets.all(context.paddingSmall),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
                                 "問題 ${index + 1}",
-                                style: const TextStyle(
-                                  fontSize: 22,
+                                style: TextStyle(
+                                  fontSize: context.fontSizeExtraLarge,
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
                               const SizedBox(height: 10),
                               Text(
                                 question.product.description,
-                                style: const TextStyle(fontSize: 18),
+                                style:
+                                    TextStyle(fontSize: context.fontSizeSmall),
                               ),
                               const SizedBox(height: 12),
                               Container(
-                                padding: const EdgeInsets.symmetric(
-                                    vertical: 6, horizontal: 12),
+                                padding: EdgeInsets.symmetric(
+                                    vertical: context.paddingSmall,
+                                    horizontal: context.paddingMedium),
                                 decoration: BoxDecoration(
                                   color: question.isCorrect
                                       ? Colors.green.withOpacity(0.2)
@@ -1672,7 +1783,7 @@ class WordTestResultPage extends ConsumerWidget {
                                 child: Text(
                                   question.isCorrect ? "正解" : "不正解",
                                   style: TextStyle(
-                                    fontSize: 18,
+                                    fontSize: context.fontSizeMedium,
                                     fontWeight: FontWeight.bold,
                                     color: question.isCorrect
                                         ? Colors.green
@@ -1691,8 +1802,9 @@ class WordTestResultPage extends ConsumerWidget {
                                     ),
                                     TextSpan(
                                       text: "${question.userAnswer}",
-                                      style: const TextStyle(
-                                          fontSize: 18, color: Colors.black87),
+                                      style: TextStyle(
+                                          fontSize: context.fontSizeMedium,
+                                          color: Colors.black87),
                                     ),
                                     if (!question.isCorrect) ...[
                                       const TextSpan(
@@ -1704,18 +1816,19 @@ class WordTestResultPage extends ConsumerWidget {
                                       ),
                                       TextSpan(
                                         text: question.product.name,
-                                        style: const TextStyle(
-                                            fontSize: 18, color: Colors.green),
+                                        style: TextStyle(
+                                            fontSize: context.fontSizeMedium,
+                                            color: Colors.green),
                                       ),
                                     ],
                                   ],
                                 ),
                               ),
                               const SizedBox(height: 16),
-                              const Text(
+                              Text(
                                 "選択肢:",
                                 style: TextStyle(
-                                  fontSize: 18,
+                                  fontSize: context.fontSizeMedium,
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
@@ -1726,7 +1839,8 @@ class WordTestResultPage extends ConsumerWidget {
                                 children: question.options.map((option) {
                                   return ActionChip(
                                     label: Text(option,
-                                        style: const TextStyle(fontSize: 16)),
+                                        style: TextStyle(
+                                            fontSize: context.fontSizeMedium)),
                                     backgroundColor:
                                         Colors.blueAccent.withOpacity(0.1),
                                     labelStyle: const TextStyle(
@@ -1770,8 +1884,9 @@ class WordTestResultPage extends ConsumerWidget {
                                     mistakeCounts[question.product.name] ?? 0;
                                 return Text(
                                   "累計ミス回数: $mistakeCount 回",
-                                  style: const TextStyle(
-                                      fontSize: 10, color: Colors.grey),
+                                  style: TextStyle(
+                                      fontSize: context.fontSizeExtraSmall,
+                                      color: Colors.grey),
                                 );
                               }),
                             ],
@@ -1802,16 +1917,16 @@ class WordTestResultPage extends ConsumerWidget {
                 },
               ),
             ),
-
-            const SizedBox(height: 20),
+            const SizedBox(height: 5),
             // ホームへ戻るボタンなど
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 ElevatedButton.icon(
                   style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(
-                        vertical: 14, horizontal: 24),
+                    padding: EdgeInsets.symmetric(
+                        vertical: context.paddingSmall,
+                        horizontal: context.paddingMedium),
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(30)),
                   ),
@@ -1819,13 +1934,15 @@ class WordTestResultPage extends ConsumerWidget {
                     Navigator.popUntil(context, (route) => route.isFirst);
                   },
                   icon: const Icon(Icons.home),
-                  label: const Text("ホームに戻る", style: TextStyle(fontSize: 18)),
+                  label: Text("ホームに戻る",
+                      style: TextStyle(fontSize: context.fontSizeMedium)),
                 ),
                 const SizedBox(width: 16),
                 ElevatedButton.icon(
                   style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(
-                        vertical: 14, horizontal: 24),
+                    padding: EdgeInsets.symmetric(
+                        vertical: context.paddingSmall,
+                        horizontal: context.paddingMedium),
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(30)),
                   ),
@@ -1848,7 +1965,8 @@ class WordTestResultPage extends ConsumerWidget {
                     }
                   },
                   icon: const Icon(Icons.refresh),
-                  label: const Text("もう一度", style: TextStyle(fontSize: 18)),
+                  label: Text("もう一度",
+                      style: TextStyle(fontSize: context.fontSizeMedium)),
                 ),
               ],
             ),
@@ -1890,7 +2008,7 @@ class CheckedQuestionsPageState extends ConsumerState<CheckedQuestionsPage> {
             right: 16,
             child: ElevatedButton(
               style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 14),
+                padding: EdgeInsets.symmetric(vertical: context.paddingMedium),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(30),
                 ),
@@ -1906,14 +2024,15 @@ class CheckedQuestionsPageState extends ConsumerState<CheckedQuestionsPage> {
                       );
                     }
                   : null,
-              child: const Text("問題出題", style: TextStyle(fontSize: 18)),
+              child: Text("問題出題",
+                  style: TextStyle(fontSize: context.fontSizeExtraLarge)),
             ),
           ),
           // 下部：チェック済みの単語リストを表示
           Padding(
-            padding: const EdgeInsets.only(top: 80.0),
+            padding: EdgeInsets.only(top: context.paddingExtraLarge * 2.5),
             child: Padding(
-              padding: const EdgeInsets.all(6.0),
+              padding: EdgeInsets.all(context.paddingExtraSmall),
               child: productsAsync.when(
                 loading: () => const Center(child: CircularProgressIndicator()),
                 error: (error, _) => Center(child: Text("データ読み込みエラー: $error")),
@@ -1987,7 +2106,8 @@ class CheckedQuestionsPageState extends ConsumerState<CheckedQuestionsPage> {
                             child: ProductCard(
                               product: product,
                               onTap: () => showProductDialog(context, product),
-                              margin: const EdgeInsets.symmetric(vertical: 8),
+                              margin: EdgeInsets.symmetric(
+                                  vertical: context.paddingExtraSmall),
                             ),
                           ),
                         );
@@ -2082,19 +2202,20 @@ class _CheckboxTestPageState extends ConsumerState<CheckboxTestPage> {
           }
           final currentQuestion = quiz[currentQuestionIndex];
           return Padding(
-            padding: const EdgeInsets.all(16.0),
+            padding: EdgeInsets.all(context.paddingMedium),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Text(
                   "問題 ${currentQuestionIndex + 1} / ${quiz.length}",
-                  style: const TextStyle(
-                      fontSize: 20, fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                      fontSize: context.fontSizeExtraLarge,
+                      fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 16),
                 Text(
                   "問題：${currentQuestion.product.description}",
-                  style: const TextStyle(fontSize: 18),
+                  style: TextStyle(fontSize: context.fontSizeMedium),
                 ),
                 const SizedBox(height: 24),
                 ...currentQuestion.options.map((option) {
@@ -2107,7 +2228,8 @@ class _CheckboxTestPageState extends ConsumerState<CheckboxTestPage> {
                     }
                   }
                   return Container(
-                    margin: const EdgeInsets.symmetric(vertical: 8),
+                    margin:
+                        EdgeInsets.symmetric(vertical: context.paddingSmall),
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
                         backgroundColor: btnColor,
@@ -2144,7 +2266,8 @@ class _CheckboxTestPageState extends ConsumerState<CheckboxTestPage> {
                               }
                             }
                           : null,
-                      child: Text(option, style: const TextStyle(fontSize: 16)),
+                      child: Text(option,
+                          style: TextStyle(fontSize: context.fontSizeMedium)),
                     ),
                   );
                 }),
@@ -2155,7 +2278,7 @@ class _CheckboxTestPageState extends ConsumerState<CheckboxTestPage> {
                         ? "正解！"
                         : "不正解。正解は ${currentQuestion.product.name} です。",
                     style: TextStyle(
-                      fontSize: 18,
+                      fontSize: context.fontSizeMedium,
                       color:
                           currentQuestion.isCorrect ? Colors.green : Colors.red,
                     ),
@@ -2277,15 +2400,12 @@ class SavedItemsPage extends ConsumerWidget {
                   child: ProductCard(
                     product: product,
                     onTap: () => showProductDialog(context, product),
-                    margin:
-                        const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+                    margin: EdgeInsets.symmetric(
+                        vertical: context.paddingExtraSmall,
+                        horizontal: context.paddingExtraSmall),
                   ),
                 ),
               );
-            },
-            onRefresh: () async {
-              await Future.delayed(const Duration(seconds: 1));
-              ref.invalidate(productsProvider);
             },
           );
         },
@@ -2321,7 +2441,7 @@ class SavedItemsPageState extends ConsumerState<SavedItemsPage> {
         ],
       ),
       body: Padding(
-        padding: const EdgeInsets.all(8.0),
+        padding: EdgeInsets.all(context.paddingMedium),
         child: productsAsync.when(
           loading: () => const Center(child: CircularProgressIndicator()),
           error: (error, _) => Center(child: Text('データ読み込みエラー: $error')),
@@ -2377,7 +2497,8 @@ class SavedItemsPageState extends ConsumerState<SavedItemsPage> {
                     direction: DismissDirection.endToStart,
                     background: Container(
                       alignment: Alignment.centerRight,
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      padding: EdgeInsets.symmetric(
+                          horizontal: context.paddingMedium),
                       color: Colors.red,
                       child: const Icon(Icons.delete, color: Colors.white),
                     ),
@@ -2494,7 +2615,8 @@ class SavedItemsPageState extends ConsumerState<SavedItemsPage> {
                       child: ProductCard(
                         product: product,
                         onTap: () => showProductDialog(context, product),
-                        margin: const EdgeInsets.symmetric(vertical: 8),
+                        margin: EdgeInsets.symmetric(
+                            vertical: context.paddingMedium),
                       ),
                     ),
                   );
@@ -2526,7 +2648,7 @@ class CategorySelectionPageState extends ConsumerState<CategorySelectionPage> {
     if (_isReordering) {
       // 並び替えモード：ReorderableListView.builder を利用
       listWidget = ReorderableListView.builder(
-        padding: const EdgeInsets.symmetric(vertical: 8),
+        padding: EdgeInsets.symmetric(vertical: context.paddingMedium),
         itemCount: categories.length,
         onReorder: (oldIndex, newIndex) async {
           if (newIndex > oldIndex) newIndex--;
@@ -2558,7 +2680,7 @@ class CategorySelectionPageState extends ConsumerState<CategorySelectionPage> {
       );
     } else {
       listWidget = ListView.builder(
-        padding: const EdgeInsets.symmetric(vertical: 8),
+        padding: EdgeInsets.symmetric(vertical: context.paddingMedium),
         itemCount: categories.length,
         itemBuilder: (context, index) {
           final cat = categories[index];
@@ -2677,7 +2799,7 @@ class CategoryAssignmentSheetState
 
     return SafeArea(
       child: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: EdgeInsets.all(context.paddingMedium),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -2687,9 +2809,9 @@ class CategoryAssignmentSheetState
                 Expanded(
                   child: Text(
                     "【${widget.product.name}】のカテゴリー割当",
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontWeight: FontWeight.bold,
-                      fontSize: 16,
+                      fontSize: context.fontSizeMedium,
                     ),
                   ),
                 ),
@@ -2774,9 +2896,9 @@ class CategoryAssignmentSheetState
                 }
                 Navigator.pop(context);
               },
-              child: const Text(
+              child: Text(
                 "完了",
-                style: TextStyle(fontSize: 18),
+                style: TextStyle(fontSize: context.fontSizeMedium),
               ),
             ),
           ],
@@ -2969,12 +3091,12 @@ class WordListPageState extends ConsumerState<WordListPage> {
             children: [
               // フィルター用のドロップダウンを上部に配置
               Padding(
-                padding: const EdgeInsets.all(16.0),
+                padding: EdgeInsets.all(context.paddingMedium),
                 child: Row(
                   children: [
-                    const Text(
+                    Text(
                       "カテゴリ絞り込み:",
-                      style: TextStyle(fontSize: 16),
+                      style: TextStyle(fontSize: context.fontSizeMedium),
                     ),
                     const SizedBox(width: 16),
                     Expanded(
@@ -3060,8 +3182,9 @@ class WordListPageState extends ConsumerState<WordListPage> {
                       child: ProductCard(
                         product: product,
                         onTap: () => showProductDialog(context, product),
-                        margin: const EdgeInsets.symmetric(
-                            vertical: 8, horizontal: 4),
+                        margin: EdgeInsets.symmetric(
+                            vertical: context.paddingExtraSmall,
+                            horizontal: context.paddingExtraSmall),
                       ),
                     );
                   },
@@ -3405,8 +3528,8 @@ class _JournalEntryQuizWidgetState extends State<JournalEntryQuizWidget> {
 
   Widget _buildDebitEntry(int index) {
     return Container(
-      margin: const EdgeInsets.symmetric(vertical: 6),
-      padding: const EdgeInsets.all(12),
+      margin: EdgeInsets.symmetric(vertical: context.paddingMedium),
+      padding: EdgeInsets.all(context.paddingMedium),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(8),
@@ -3419,8 +3542,9 @@ class _JournalEntryQuizWidgetState extends State<JournalEntryQuizWidget> {
           DropdownButtonFormField<String>(
             decoration: InputDecoration(
               labelText: "勘定科目",
-              contentPadding:
-                  const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              contentPadding: EdgeInsets.symmetric(
+                  horizontal: context.paddingMedium,
+                  vertical: context.paddingMedium),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
               ),
@@ -3435,7 +3559,7 @@ class _JournalEntryQuizWidgetState extends State<JournalEntryQuizWidget> {
                         alignment: Alignment.centerLeft,
                         child: Text(
                           account,
-                          style: const TextStyle(fontSize: 16),
+                          style: TextStyle(fontSize: context.fontSizeMedium),
                           maxLines: 1,
                         ),
                       ),
@@ -3453,8 +3577,9 @@ class _JournalEntryQuizWidgetState extends State<JournalEntryQuizWidget> {
             controller: debitAmountControllers[index],
             decoration: InputDecoration(
               labelText: "金額",
-              contentPadding:
-                  const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              contentPadding: EdgeInsets.symmetric(
+                  horizontal: context.paddingMedium,
+                  vertical: context.paddingMedium),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
               ),
@@ -3494,8 +3619,8 @@ class _JournalEntryQuizWidgetState extends State<JournalEntryQuizWidget> {
 // 右側（貸方エントリー）のウィジェット
   Widget _buildCreditEntry(int index) {
     return Container(
-      margin: const EdgeInsets.symmetric(vertical: 6),
-      padding: const EdgeInsets.all(12),
+      margin: EdgeInsets.symmetric(vertical: context.paddingMedium),
+      padding: EdgeInsets.all(context.paddingMedium),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(8),
@@ -3507,8 +3632,9 @@ class _JournalEntryQuizWidgetState extends State<JournalEntryQuizWidget> {
           DropdownButtonFormField<String>(
             decoration: InputDecoration(
               labelText: "勘定科目",
-              contentPadding:
-                  const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              contentPadding: EdgeInsets.symmetric(
+                  horizontal: context.paddingMedium,
+                  vertical: context.paddingMedium),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
               ),
@@ -3524,7 +3650,7 @@ class _JournalEntryQuizWidgetState extends State<JournalEntryQuizWidget> {
                         child: Text(
                           account,
                           maxLines: 1,
-                          style: const TextStyle(fontSize: 16),
+                          style: TextStyle(fontSize: context.fontSizeMedium),
                         ),
                       ),
                     ))
@@ -3541,8 +3667,9 @@ class _JournalEntryQuizWidgetState extends State<JournalEntryQuizWidget> {
             controller: creditAmountControllers[index],
             decoration: InputDecoration(
               labelText: "金額",
-              contentPadding:
-                  const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              contentPadding: EdgeInsets.symmetric(
+                  horizontal: context.paddingMedium,
+                  vertical: context.paddingMedium),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
               ),
@@ -3587,7 +3714,8 @@ class _JournalEntryQuizWidgetState extends State<JournalEntryQuizWidget> {
         const SizedBox(height: 20),
         Text(
           widget.problem.description,
-          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
+          style: TextStyle(
+              fontSize: context.fontSizeMedium, fontWeight: FontWeight.w500),
         ),
         const SizedBox(height: 20),
         Row(
@@ -3597,9 +3725,10 @@ class _JournalEntryQuizWidgetState extends State<JournalEntryQuizWidget> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text("借方",
-                      style:
-                          TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                  Text("借方",
+                      style: TextStyle(
+                          fontSize: context.fontSizeMedium,
+                          fontWeight: FontWeight.bold)),
                   const Divider(thickness: 2),
                   Column(
                     children: List.generate(debitAnswers.length,
@@ -3613,9 +3742,10 @@ class _JournalEntryQuizWidgetState extends State<JournalEntryQuizWidget> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text("貸方",
-                      style:
-                          TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                  Text("貸方",
+                      style: TextStyle(
+                          fontSize: context.fontSizeMedium,
+                          fontWeight: FontWeight.bold)),
                   const Divider(thickness: 2),
                   Column(
                     children: List.generate(creditAnswers.length,
@@ -3630,7 +3760,7 @@ class _JournalEntryQuizWidgetState extends State<JournalEntryQuizWidget> {
         if (isAnswerCorrect != null)
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.all(context.paddingMedium),
             decoration: BoxDecoration(
               color: isAnswerCorrect! ? Colors.green[50] : Colors.red[50],
               borderRadius: BorderRadius.circular(12),
@@ -3644,7 +3774,7 @@ class _JournalEntryQuizWidgetState extends State<JournalEntryQuizWidget> {
                 Text(
                   isAnswerCorrect! ? "正解です！" : "不正解です",
                   style: TextStyle(
-                    fontSize: 18,
+                    fontSize: context.fontSizeMedium,
                     fontWeight: FontWeight.bold,
                     color: isAnswerCorrect! ? Colors.green : Colors.red,
                   ),
@@ -3675,15 +3805,15 @@ class _JournalEntryQuizWidgetState extends State<JournalEntryQuizWidget> {
                 }
               : null,
           style: ElevatedButton.styleFrom(
-            padding: const EdgeInsets.symmetric(vertical: 16),
+            padding: EdgeInsets.symmetric(vertical: context.paddingMedium),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
             ),
           ),
-          child: const Center(
+          child: Center(
             child: Text(
               "回答を提出",
-              style: TextStyle(fontSize: 16),
+              style: TextStyle(fontSize: context.fontSizeMedium),
             ),
           ),
         ),
@@ -3774,7 +3904,9 @@ class JournalEntryQuizPageState extends ConsumerState<JournalEntryQuizPage> {
           }
           final currentProblem = quizProblems[currentIndex];
           return SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+            padding: EdgeInsets.symmetric(
+                horizontal: context.paddingMedium,
+                vertical: context.paddingMedium),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -3784,21 +3916,23 @@ class JournalEntryQuizPageState extends ConsumerState<JournalEntryQuizPage> {
                   children: [
                     Text(
                       "問題 ${currentIndex + 1} / ${quizProblems.length} (${currentProblem.bookkeepingType})",
-                      style: const TextStyle(
-                          fontSize: 20, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                          fontSize: context.fontSizeMedium,
+                          fontWeight: FontWeight.bold),
                     ),
                     if (lastAnswerCorrect != null)
                       ElevatedButton(
                         onPressed: nextQuestion,
                         style: ElevatedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(
-                              vertical: 16, horizontal: 32),
+                          padding: EdgeInsets.symmetric(
+                              vertical: context.paddingMedium,
+                              horizontal: context.paddingMedium),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
                         ),
-                        child:
-                            const Text("次の問題へ", style: TextStyle(fontSize: 16)),
+                        child: Text("次の問題へ",
+                            style: TextStyle(fontSize: context.fontSizeMedium)),
                       ),
                   ],
                 ),
@@ -3840,14 +3974,14 @@ class SortingQuizResultPage extends ConsumerWidget {
         title: const Text("結果画面"),
       ),
       body: Padding(
-        padding: const EdgeInsets.all(20.0),
+        padding: EdgeInsets.all(context.paddingMedium),
         child: Column(
           children: [
             // 総合成績表示
             Text(
               "結果：$correctCount / ${quizProblems.length} 問正解",
-              style: const TextStyle(
-                fontSize: 26,
+              style: TextStyle(
+                fontSize: context.fontSizeMedium,
                 fontWeight: FontWeight.bold,
                 color: Colors.blueAccent,
               ),
@@ -3882,27 +4016,27 @@ class SortingQuizResultPage extends ConsumerWidget {
                                 end: Alignment.bottomRight,
                               ),
                       ),
-                      padding: const EdgeInsets.all(20),
+                      padding: EdgeInsets.all(context.paddingMedium),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
                             "問題 ${index + 1}",
-                            style: const TextStyle(
-                              fontSize: 22,
+                            style: TextStyle(
+                              fontSize: context.fontSizeMedium,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
                           const SizedBox(height: 10),
                           Text(
                             problem.description,
-                            style: const TextStyle(fontSize: 18),
+                            style: TextStyle(fontSize: context.fontSizeMedium),
                           ),
                           const SizedBox(height: 12),
                           Text(
                             isCorrect ? "正解" : "不正解",
                             style: TextStyle(
-                              fontSize: 18,
+                              fontSize: context.fontSizeMedium,
                               fontWeight: FontWeight.bold,
                               color: isCorrect ? Colors.green : Colors.red,
                             ),
@@ -3949,10 +4083,12 @@ class SortingQuizResultPage extends ConsumerWidget {
                     Navigator.popUntil(context, (route) => route.isFirst);
                   },
                   icon: const Icon(Icons.home),
-                  label: const Text("ホームに戻る", style: TextStyle(fontSize: 16)),
+                  label: Text("ホームに戻る",
+                      style: TextStyle(fontSize: context.fontSizeMedium)),
                   style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(
-                        vertical: 16, horizontal: 32),
+                    padding: EdgeInsets.symmetric(
+                        vertical: context.paddingMedium,
+                        horizontal: context.paddingMedium),
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12)),
                   ),
@@ -3967,10 +4103,12 @@ class SortingQuizResultPage extends ConsumerWidget {
                     );
                   },
                   icon: const Icon(Icons.refresh),
-                  label: const Text("もう一度", style: TextStyle(fontSize: 16)),
+                  label: Text("もう一度",
+                      style: TextStyle(fontSize: context.fontSizeMedium)),
                   style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(
-                        vertical: 16, horizontal: 32),
+                    padding: EdgeInsets.symmetric(
+                        vertical: context.paddingMedium,
+                        horizontal: context.paddingMedium),
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12)),
                   ),
@@ -4058,7 +4196,7 @@ class CalculatorWidgetState extends State<CalculatorWidget> {
       onPressed: () => _onPressed(label),
       child: Text(
         label,
-        style: const TextStyle(fontSize: 24),
+        style: TextStyle(fontSize: context.fontSizeMedium),
       ),
     );
   }
@@ -4090,17 +4228,17 @@ class CalculatorWidgetState extends State<CalculatorWidget> {
     ];
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(context.paddingMedium),
       height: 500, // ModalBottomSheetに合わせた高さ（調整可能）
       child: Column(
         children: [
           // 入力結果表示部
           Container(
-            padding: const EdgeInsets.all(12),
+            padding: EdgeInsets.all(context.paddingMedium),
             alignment: Alignment.centerRight,
             child: Text(
               display,
-              style: const TextStyle(fontSize: 32),
+              style: TextStyle(fontSize: context.fontSizeMedium),
             ),
           ),
           const Divider(),
@@ -4135,9 +4273,9 @@ class CalculatorWidgetState extends State<CalculatorWidget> {
             style: ElevatedButton.styleFrom(
               minimumSize: const Size(double.infinity, 48),
             ),
-            child: const Text(
+            child: Text(
               "確定",
-              style: TextStyle(fontSize: 20),
+              style: TextStyle(fontSize: context.fontSizeMedium),
             ),
           ),
         ],
@@ -4247,8 +4385,9 @@ class WordSearchPage extends ConsumerWidget {
                 child: ProductCard(
                   product: product,
                   onTap: () => showProductDialog(context, product),
-                  margin:
-                      const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+                  margin: EdgeInsets.symmetric(
+                      vertical: context.paddingMedium,
+                      horizontal: context.paddingMedium),
                 ),
               );
             },
@@ -4321,7 +4460,7 @@ class SettingsPage extends ConsumerWidget {
         return Scaffold(
           appBar: AppBar(title: const Text("設定")),
           body: Padding(
-            padding: const EdgeInsets.all(16.0),
+            padding: EdgeInsets.all(context.paddingMedium),
             child: SettingsForm(
               initialIndustrial: settings.includeIndustrial,
               initialCommercial: settings.includeCommercial,
@@ -4363,9 +4502,10 @@ class _SettingsFormState extends ConsumerState<SettingsForm> {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        const Text(
+        Text(
           "仕訳問題クイズの出題タイプを選択してください",
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          style: TextStyle(
+              fontSize: context.fontSizeMedium, fontWeight: FontWeight.bold),
         ),
         CheckboxListTile(
           title: const Text("商業簿記"),
