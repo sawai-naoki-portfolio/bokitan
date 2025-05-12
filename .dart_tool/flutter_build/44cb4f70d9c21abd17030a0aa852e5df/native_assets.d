@@ -1,1 +1,0 @@
- C:\\Users\\naoki\\AndroidStudioProjects\\bookkeeping_vocabulary_notebook\\.dart_tool\\flutter_build\\44cb4f70d9c21abd17030a0aa852e5df\\native_assets.yaml: 

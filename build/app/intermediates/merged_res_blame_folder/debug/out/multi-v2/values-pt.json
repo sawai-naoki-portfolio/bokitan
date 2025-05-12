@@ -1,7 +1,7 @@
 {
     "logs": [
         {
-            "outputFile": "com.example.bookkeeping_vocabulary_notebook.app-mergeDebugResources-24:/values-pt/values-pt.xml",
+            "outputFile": "com.bokitan.bookkeeping_vocabulary_notebook.app-mergeDebugResources-24:/values-pt/values-pt.xml",
             "map": [
                 {
                     "source": "C:\\Users\\naoki\\.gradle\\caches\\transforms-3\\28ee8a5ebc96d117de5598ee6fce01ba\\transformed\\core-1.13.1\\res\\values-pt\\values-pt.xml",

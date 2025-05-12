@@ -1,6 +1,6 @@
 1<?xml version="1.0" encoding="utf-8"?>
 2<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-3    package="com.example.bookkeeping_vocabulary_notebook"
+3    package="com.bokitan.bookkeeping_vocabulary_notebook"
 4    android:versionCode="1"
 5    android:versionName="1.0.0" >
 6
@@ -38,12 +38,12 @@
 30
 31    <permission
 31-->[androidx.core:core:1.13.1] C:\Users\naoki\.gradle\caches\transforms-3\28ee8a5ebc96d117de5598ee6fce01ba\transformed\core-1.13.1\AndroidManifest.xml:22:5-24:47
-32        android:name="com.example.bookkeeping_vocabulary_notebook.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
+32        android:name="com.bokitan.bookkeeping_vocabulary_notebook.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
 32-->[androidx.core:core:1.13.1] C:\Users\naoki\.gradle\caches\transforms-3\28ee8a5ebc96d117de5598ee6fce01ba\transformed\core-1.13.1\AndroidManifest.xml:23:9-81
 33        android:protectionLevel="signature" />
 33-->[androidx.core:core:1.13.1] C:\Users\naoki\.gradle\caches\transforms-3\28ee8a5ebc96d117de5598ee6fce01ba\transformed\core-1.13.1\AndroidManifest.xml:24:9-44
 34
-35    <uses-permission android:name="com.example.bookkeeping_vocabulary_notebook.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION" />
+35    <uses-permission android:name="com.bokitan.bookkeeping_vocabulary_notebook.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION" />
 35-->[androidx.core:core:1.13.1] C:\Users\naoki\.gradle\caches\transforms-3\28ee8a5ebc96d117de5598ee6fce01ba\transformed\core-1.13.1\AndroidManifest.xml:26:5-97
 35-->[androidx.core:core:1.13.1] C:\Users\naoki\.gradle\caches\transforms-3\28ee8a5ebc96d117de5598ee6fce01ba\transformed\core-1.13.1\AndroidManifest.xml:26:22-94
 36
@@ -56,7 +56,7 @@
 42        android:icon="@mipmap/ic_launcher"
 43        android:label="簿記単" >
 44        <activity
-45            android:name="com.example.bookkeeping_vocabulary_notebook.MainActivity"
+45            android:name="com.bokitan.bookkeeping_vocabulary_notebook.MainActivity"
 46            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
 47            android:exported="true"
 48            android:hardwareAccelerated="true"
@@ -106,7 +106,7 @@
 85-->[androidx.lifecycle:lifecycle-process:2.7.0] C:\Users\naoki\.gradle\caches\transforms-3\6f1de229824e3b626519c3b4ed1eee9b\transformed\jetified-lifecycle-process-2.7.0\AndroidManifest.xml:24:9-32:20
 86            android:name="androidx.startup.InitializationProvider"
 86-->[androidx.lifecycle:lifecycle-process:2.7.0] C:\Users\naoki\.gradle\caches\transforms-3\6f1de229824e3b626519c3b4ed1eee9b\transformed\jetified-lifecycle-process-2.7.0\AndroidManifest.xml:25:13-67
-87            android:authorities="com.example.bookkeeping_vocabulary_notebook.androidx-startup"
+87            android:authorities="com.bokitan.bookkeeping_vocabulary_notebook.androidx-startup"
 87-->[androidx.lifecycle:lifecycle-process:2.7.0] C:\Users\naoki\.gradle\caches\transforms-3\6f1de229824e3b626519c3b4ed1eee9b\transformed\jetified-lifecycle-process-2.7.0\AndroidManifest.xml:26:13-68
 88            android:exported="false" >
 88-->[androidx.lifecycle:lifecycle-process:2.7.0] C:\Users\naoki\.gradle\caches\transforms-3\6f1de229824e3b626519c3b4ed1eee9b\transformed\jetified-lifecycle-process-2.7.0\AndroidManifest.xml:27:13-37

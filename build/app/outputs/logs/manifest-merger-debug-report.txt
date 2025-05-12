@@ -157,7 +157,7 @@ ADDED from [androidx.core:core:1.13.1] C:\Users\naoki\.gradle\caches\transforms-
 		ADDED from [androidx.core:core:1.13.1] C:\Users\naoki\.gradle\caches\transforms-3\28ee8a5ebc96d117de5598ee6fce01ba\transformed\core-1.13.1\AndroidManifest.xml:24:9-44
 	android:name
 		ADDED from [androidx.core:core:1.13.1] C:\Users\naoki\.gradle\caches\transforms-3\28ee8a5ebc96d117de5598ee6fce01ba\transformed\core-1.13.1\AndroidManifest.xml:23:9-81
-permission#com.example.bookkeeping_vocabulary_notebook.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION
+permission#com.bokitan.bookkeeping_vocabulary_notebook.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION
 ADDED from [androidx.core:core:1.13.1] C:\Users\naoki\.gradle\caches\transforms-3\28ee8a5ebc96d117de5598ee6fce01ba\transformed\core-1.13.1\AndroidManifest.xml:22:5-24:47
 	android:protectionLevel
 		ADDED from [androidx.core:core:1.13.1] C:\Users\naoki\.gradle\caches\transforms-3\28ee8a5ebc96d117de5598ee6fce01ba\transformed\core-1.13.1\AndroidManifest.xml:24:9-44
@@ -167,7 +167,7 @@ uses-permission#${applicationId}.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION
 ADDED from [androidx.core:core:1.13.1] C:\Users\naoki\.gradle\caches\transforms-3\28ee8a5ebc96d117de5598ee6fce01ba\transformed\core-1.13.1\AndroidManifest.xml:26:5-97
 	android:name
 		ADDED from [androidx.core:core:1.13.1] C:\Users\naoki\.gradle\caches\transforms-3\28ee8a5ebc96d117de5598ee6fce01ba\transformed\core-1.13.1\AndroidManifest.xml:26:22-94
-uses-permission#com.example.bookkeeping_vocabulary_notebook.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION
+uses-permission#com.bokitan.bookkeeping_vocabulary_notebook.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION
 ADDED from [androidx.core:core:1.13.1] C:\Users\naoki\.gradle\caches\transforms-3\28ee8a5ebc96d117de5598ee6fce01ba\transformed\core-1.13.1\AndroidManifest.xml:26:5-97
 	android:name
 		ADDED from [androidx.core:core:1.13.1] C:\Users\naoki\.gradle\caches\transforms-3\28ee8a5ebc96d117de5598ee6fce01ba\transformed\core-1.13.1\AndroidManifest.xml:26:22-94

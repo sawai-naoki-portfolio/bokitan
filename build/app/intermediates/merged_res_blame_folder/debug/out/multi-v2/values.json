@@ -1,7 +1,7 @@
 {
     "logs": [
         {
-            "outputFile": "com.example.bookkeeping_vocabulary_notebook.app-mergeDebugResources-24:/values/values.xml",
+            "outputFile": "com.bokitan.bookkeeping_vocabulary_notebook.app-mergeDebugResources-24:/values/values.xml",
             "map": [
                 {
                     "source": "C:\\Users\\naoki\\.gradle\\caches\\transforms-3\\aecaa94fd3010ebbc81c2fe40f782abe\\transformed\\jetified-activity-1.8.1\\res\\values\\values.xml",
