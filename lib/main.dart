@@ -1053,14 +1053,10 @@ final checkedQuestionsProvider =
 // まず、必ず WidgetsBinding を初期化
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  final quizSettings = await loadQuizFilterSettings();
 
   runApp(
-    ProviderScope(
-      overrides: [
-        quizFilterSettingsProvider.overrideWith((ref) => quizSettings),
-      ],
-      child: const MyApp(),
+    const ProviderScope(
+      child: MyApp(),
     ),
   );
 }
@@ -1367,57 +1363,36 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                             ),
                           ),
                         ),
-                        // const Divider(height: 1),
-                        // InkWell(
-                        //   onTap: () {
-                        //     Navigator.pop(context);
-                        //     Navigator.push(
-                        //       context,
-                        //       MaterialPageRoute(
-                        //           builder: (_) => const JournalEntryQuizPage()),
-                        //     );
-                        //   },
-                        //   child: Container(
-                        //     padding: EdgeInsets.symmetric(
-                        //         vertical: 16, horizontal: 16),
-                        //     child: const Row(
-                        //       children: [
-                        //         Icon(Icons.sort, color: Colors.blue),
-                        //         SizedBox(width: 16),
-                        //         Expanded(
-                        //             child: Text("仕訳問題",
-                        //                 style: TextStyle(fontSize: context.fontSizeMedium))),
-                        //       ],
-                        //     ),
-                        //   ),
-                        // ),
+                        const Divider(height: 1),
+
                         // ★ 新規追加：設定項目
                         // 例：SearchPageのメニュー表示部分（既存項目の後ろに追加）
-                        // InkWell(
-                        //   onTap: () {
-                        //     Navigator.pop(context);
-                        //     Navigator.push(
-                        //       context,
-                        //       MaterialPageRoute(
-                        //           builder: (_) => const SettingsPage()),
-                        //     );
-                        //   },
-                        //   child: Container(
-                        //     padding: EdgeInsets.symmetric(
-                        //         vertical: 16, horizontal: 16),
-                        //     child: const Row(
-                        //       children: [
-                        //         Icon(Icons.settings, color: Colors.blue),
-                        //         SizedBox(width: 16),
-                        //         Expanded(
-                        //           child: Text("設定",
-                        //               style: TextStyle(fontSize: context.fontSizeMedium)),
-                        //         ),
-                        //       ],
-                        //     ),
-                        //   ),
-                        // ),
-                        // const Divider(height: 1),
+                        InkWell(
+                          onTap: () {
+                            Navigator.pop(context);
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (_) => const SettingsPage()),
+                            );
+                          },
+                          child: Container(
+                            padding: EdgeInsets.symmetric(
+                                vertical: context.paddingMedium,
+                                horizontal: context.paddingSmall),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.settings, color: Colors.blue),
+                                const SizedBox(width: 16),
+                                Expanded(
+                                  child: Text("設定",
+                                      style: TextStyle(
+                                          fontSize: context.fontSizeMedium)),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
                         const Divider(height: 1),
                         InkWell(
                           onTap: () {
@@ -3822,306 +3797,6 @@ class _JournalEntryQuizWidgetState extends State<JournalEntryQuizWidget> {
   }
 }
 
-class JournalEntryQuizPage extends ConsumerStatefulWidget {
-  const JournalEntryQuizPage({super.key});
-
-  @override
-  JournalEntryQuizPageState createState() => JournalEntryQuizPageState();
-}
-
-class JournalEntryQuizPageState extends ConsumerState<JournalEntryQuizPage> {
-  int currentIndex = 0;
-  bool? lastAnswerCorrect;
-  late List<SortingProblem> quizProblems;
-  List<bool> answers = [];
-  bool isQuizInitialized = false;
-
-  void onQuizSubmitted(bool isCorrect) {
-    setState(() {
-      lastAnswerCorrect = isCorrect;
-      answers.add(isCorrect);
-    });
-  }
-
-  void nextQuestion() {
-    if (currentIndex < quizProblems.length - 1) {
-      setState(() {
-        currentIndex++;
-        lastAnswerCorrect = null;
-      });
-    } else {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (_) => SortingQuizResultPage(
-            quizProblems: quizProblems,
-            answers: answers,
-          ),
-        ),
-      );
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final problemsAsync = ref.watch(sortingProblemsProvider);
-    // 設定状態を取得
-    final settings = ref.watch(quizFilterSettingsProvider);
-    // 設定内容に応じたフィルタ条件を決定
-    String filter;
-    if (settings.includeIndustrial && !settings.includeCommercial) {
-      filter = "工業簿記";
-    } else if (!settings.includeIndustrial && settings.includeCommercial) {
-      filter = "商業簿記";
-    } else {
-      filter = "ランダム";
-    }
-
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text("仕訳問題クイズ"),
-      ),
-      body: problemsAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stack) => Center(child: Text("エラー: $error")),
-        data: (problems) {
-          List<SortingProblem> availableProblems;
-          if (filter != "ランダム") {
-            availableProblems =
-                problems.where((p) => p.bookkeepingType == filter).toList();
-          } else {
-            availableProblems = problems;
-          }
-          if (availableProblems.isEmpty) {
-            return Center(child: Text("「$filter」の問題はありません"));
-          }
-          if (!isQuizInitialized) {
-            availableProblems.shuffle(Random());
-            quizProblems = availableProblems.length >= 10
-                ? availableProblems.take(10).toList()
-                : availableProblems.toList();
-            isQuizInitialized = true;
-          }
-          final currentProblem = quizProblems[currentIndex];
-          return SingleChildScrollView(
-            padding: EdgeInsets.symmetric(
-                horizontal: context.paddingMedium,
-                vertical: context.paddingMedium),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // 問題番号と問題の種別を表示
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      "問題 ${currentIndex + 1} / ${quizProblems.length} (${currentProblem.bookkeepingType})",
-                      style: TextStyle(
-                          fontSize: context.fontSizeMedium,
-                          fontWeight: FontWeight.bold),
-                    ),
-                    if (lastAnswerCorrect != null)
-                      ElevatedButton(
-                        onPressed: nextQuestion,
-                        style: ElevatedButton.styleFrom(
-                          padding: EdgeInsets.symmetric(
-                              vertical: context.paddingMedium,
-                              horizontal: context.paddingMedium),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        child: Text("次の問題へ",
-                            style: TextStyle(fontSize: context.fontSizeMedium)),
-                      ),
-                  ],
-                ),
-                const SizedBox(height: 24),
-                JournalEntryQuizWidget(
-                  key: ValueKey(currentProblem.id),
-                  problem: currentProblem,
-                  onSubmitted: onQuizSubmitted,
-                ),
-                const SizedBox(height: 24),
-              ],
-            ),
-          );
-        },
-      ),
-    );
-  }
-}
-
-/// ─────────────────────────────────────────────
-/// 結果画面【各問題の結果と総合得点を表示】
-/// ─────────────────────────────────────────────
-
-class SortingQuizResultPage extends ConsumerWidget {
-  final List<SortingProblem> quizProblems;
-  final List<bool> answers; // 各問題の正誤結果
-
-  const SortingQuizResultPage({
-    super.key,
-    required this.quizProblems,
-    required this.answers,
-  });
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    int correctCount = answers.where((isCorrect) => isCorrect).length;
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text("結果画面"),
-      ),
-      body: Padding(
-        padding: EdgeInsets.all(context.paddingMedium),
-        child: Column(
-          children: [
-            // 総合成績表示
-            Text(
-              "結果：$correctCount / ${quizProblems.length} 問正解",
-              style: TextStyle(
-                fontSize: context.fontSizeMedium,
-                fontWeight: FontWeight.bold,
-                color: Colors.blueAccent,
-              ),
-            ),
-            const SizedBox(height: 20),
-            // 各問題の結果をカード形式で表示
-            Expanded(
-              child: ListView.separated(
-                separatorBuilder: (context, index) =>
-                    const SizedBox(height: 16),
-                itemCount: quizProblems.length,
-                itemBuilder: (context, index) {
-                  final problem = quizProblems[index];
-                  final isCorrect = answers[index];
-                  return Card(
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    elevation: 6,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(20),
-                        gradient: isCorrect
-                            ? const LinearGradient(
-                                colors: [Color(0xFFE8F5E9), Color(0xFFC8E6C9)],
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                              )
-                            : const LinearGradient(
-                                colors: [Color(0xFFFFEBEE), Color(0xFFFFCDD2)],
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                              ),
-                      ),
-                      padding: EdgeInsets.all(context.paddingMedium),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            "問題 ${index + 1}",
-                            style: TextStyle(
-                              fontSize: context.fontSizeMedium,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(height: 10),
-                          Text(
-                            problem.description,
-                            style: TextStyle(fontSize: context.fontSizeMedium),
-                          ),
-                          const SizedBox(height: 12),
-                          Text(
-                            isCorrect ? "正解" : "不正解",
-                            style: TextStyle(
-                              fontSize: context.fontSizeMedium,
-                              fontWeight: FontWeight.bold,
-                              color: isCorrect ? Colors.green : Colors.red,
-                            ),
-                          ),
-                          if (!isCorrect) ...[
-                            const SizedBox(height: 12),
-                            const Text(
-                              "正解仕訳【借方】",
-                              style: TextStyle(fontWeight: FontWeight.bold),
-                            ),
-                            ...problem.entries
-                                .where((e) => e.side == "借方")
-                                .map((e) => Text("${e.account}  ¥${e.amount}")),
-                            const SizedBox(height: 4),
-                            const Text(
-                              "正解仕訳【貸方】",
-                              style: TextStyle(fontWeight: FontWeight.bold),
-                            ),
-                            ...problem.entries
-                                .where((e) => e.side == "貸方")
-                                .map((e) => Text("${e.account}  ¥${e.amount}")),
-                            const SizedBox(height: 12),
-                            const Text(
-                              "解説：",
-                              style: TextStyle(fontWeight: FontWeight.bold),
-                            ),
-                            Text(problem.feedback),
-                          ]
-                        ],
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
-            const SizedBox(height: 20),
-            // 2つのボタンを横に並べる例
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                // 「ホームに戻る」ボタン：トップに戻る
-                ElevatedButton.icon(
-                  onPressed: () {
-                    Navigator.popUntil(context, (route) => route.isFirst);
-                  },
-                  icon: const Icon(Icons.home),
-                  label: Text("ホームに戻る",
-                      style: TextStyle(fontSize: context.fontSizeMedium)),
-                  style: ElevatedButton.styleFrom(
-                    padding: EdgeInsets.symmetric(
-                        vertical: context.paddingMedium,
-                        horizontal: context.paddingMedium),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12)),
-                  ),
-                ),
-                // 「もう一度」ボタン：クイズを再挑戦
-                ElevatedButton.icon(
-                  onPressed: () {
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(
-                          builder: (_) => const JournalEntryQuizPage()),
-                    );
-                  },
-                  icon: const Icon(Icons.refresh),
-                  label: Text("もう一度",
-                      style: TextStyle(fontSize: context.fontSizeMedium)),
-                  style: ElevatedButton.styleFrom(
-                    padding: EdgeInsets.symmetric(
-                        vertical: context.paddingMedium,
-                        horizontal: context.paddingMedium),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12)),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 class CalculatorWidget extends StatefulWidget {
   /// CalculatorWidget の初期値は常に 0 からスタート
   final double initialValue;
@@ -4402,144 +4077,97 @@ class WordSearchPage extends ConsumerWidget {
   }
 }
 
-// 設定用モデル、プロバイダー、永続化関数はそのまま
-class QuizFilterSettings {
-  final bool includeIndustrial; // 工業簿記を含むか
-  final bool includeCommercial; // 商業簿記を含むか
-
-  QuizFilterSettings({
-    required this.includeIndustrial,
-    required this.includeCommercial,
-  });
-}
-
-final quizFilterSettingsProvider = StateProvider<QuizFilterSettings>(
-  (ref) => QuizFilterSettings(includeIndustrial: true, includeCommercial: true),
-);
-
-Future<QuizFilterSettings> loadQuizFilterSettings() async {
-  final prefs = await SharedPreferences.getInstance();
-  bool includeIndustrial = prefs.getBool("quiz_include_industrial") ?? true;
-  bool includeCommercial = prefs.getBool("quiz_include_commercial") ?? true;
-  return QuizFilterSettings(
-    includeIndustrial: includeIndustrial,
-    includeCommercial: includeCommercial,
-  );
-}
-
-Future<void> saveQuizFilterSettings(QuizFilterSettings settings) async {
-  final prefs = await SharedPreferences.getInstance();
-  await prefs.setBool("quiz_include_industrial", settings.includeIndustrial);
-  await prefs.setBool("quiz_include_commercial", settings.includeCommercial);
-}
-
 /// 設定画面：FutureBuilderで初回設定値を読み込んでからフォームウィジェットに渡す
 class SettingsPage extends ConsumerWidget {
-  const SettingsPage({super.key});
-
-  Future<QuizFilterSettings> _loadSettings() async {
-    return await loadQuizFilterSettings();
-  }
+  const SettingsPage({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return FutureBuilder<QuizFilterSettings>(
-      future: _loadSettings(),
-      builder: (context, snapshot) {
-        if (!snapshot.hasData) {
-          return Scaffold(
-            appBar: AppBar(title: const Text("設定")),
-            body: const Center(child: CircularProgressIndicator()),
-          );
-        }
-        final settings = snapshot.data!;
-        // 状態の更新を Future.microtask で延期する
-        Future.microtask(() {
-          ref.read(quizFilterSettingsProvider.notifier).state = settings;
-        });
-        return Scaffold(
-          appBar: AppBar(title: const Text("設定")),
-          body: Padding(
-            padding: EdgeInsets.all(context.paddingMedium),
-            child: SettingsForm(
-              initialIndustrial: settings.includeIndustrial,
-              initialCommercial: settings.includeCommercial,
-            ),
+    final studySettings = ref.watch(studySettingsProvider);
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text("設定"),
+      ),
+      body: ListView(
+        children: [
+          SwitchListTile(
+            title: const Text("勉強開始時間を有効にする"),
+            value: studySettings.enableStudyStartTime,
+            onChanged: (value) {
+              ref.read(studySettingsProvider.notifier).setEnableStudyStartTime(value);
+            },
           ),
-        );
-      },
+          if (studySettings.enableStudyStartTime)
+            ListTile(
+              title: const Text("勉強開始時間"),
+              subtitle: Text(studySettings.studyStartTime),
+              trailing: const Icon(Icons.access_time),
+              onTap: () async {
+                // 現在設定されている時刻を TimeOfDay に変換
+                final parts = studySettings.studyStartTime.split(":");
+                TimeOfDay initialTime = TimeOfDay(
+                  hour: int.parse(parts[0]),
+                  minute: int.parse(parts[1]),
+                );
+                final chosenTime = await showTimePicker(
+                  context: context,
+                  initialTime: initialTime,
+                );
+                if (chosenTime != null) {
+                  // 時刻を "HH:mm" 形式にフォーマット
+                  final formatted = "${chosenTime.hour.toString().padLeft(2, '0')}:${chosenTime.minute.toString().padLeft(2, '0')}";
+                  ref.read(studySettingsProvider.notifier).setStudyStartTime(formatted);
+                }
+              },
+            ),
+          // 他の設定項目があればここに追加・・・
+        ],
+      ),
     );
   }
 }
 
-/// 設定フォーム（ConsumerStatefulWidget に変更）
-class SettingsForm extends ConsumerStatefulWidget {
-  final bool initialIndustrial;
-  final bool initialCommercial;
 
-  const SettingsForm({
-    super.key,
-    required this.initialIndustrial,
-    required this.initialCommercial,
+// 勉強開始時間設定用のモデル
+class StudySettings {
+  final bool enableStudyStartTime;
+  final String studyStartTime; // "HH:mm" 形式
+
+  StudySettings({
+    required this.enableStudyStartTime,
+    required this.studyStartTime,
   });
-
-  @override
-  ConsumerState<SettingsForm> createState() => _SettingsFormState();
 }
 
-class _SettingsFormState extends ConsumerState<SettingsForm> {
-  late bool _includeIndustrial;
-  late bool _includeCommercial;
-
-  @override
-  void initState() {
-    super.initState();
-    _includeIndustrial = widget.initialIndustrial;
-    _includeCommercial = widget.initialCommercial;
+// StateNotifier を使って状態管理（SharedPreferences への保存も実施）
+class StudySettingsNotifier extends StateNotifier<StudySettings> {
+  StudySettingsNotifier()
+      : super(StudySettings(enableStudyStartTime: false, studyStartTime: "08:00")) {
+    _loadSettings();
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Text(
-          "仕訳問題クイズの出題タイプを選択してください",
-          style: TextStyle(
-              fontSize: context.fontSizeMedium, fontWeight: FontWeight.bold),
-        ),
-        CheckboxListTile(
-          title: const Text("商業簿記"),
-          value: _includeCommercial,
-          onChanged: (val) {
-            setState(() {
-              _includeCommercial = val ?? false;
-            });
-          },
-        ),
-        CheckboxListTile(
-          title: const Text("工業簿記"),
-          value: _includeIndustrial,
-          onChanged: (val) {
-            setState(() {
-              _includeIndustrial = val ?? false;
-            });
-          },
-        ),
-        const SizedBox(height: 20),
-        ElevatedButton(
-          onPressed: () async {
-            // 新たな設定を作成し、プロバイダーと SharedPreferences へ保存する
-            final newSettings = QuizFilterSettings(
-              includeIndustrial: _includeIndustrial,
-              includeCommercial: _includeCommercial,
-            );
-            ref.read(quizFilterSettingsProvider.notifier).state = newSettings;
-            await saveQuizFilterSettings(newSettings);
-            Navigator.pop(context);
-          },
-          child: const Text("保存"),
-        ),
-      ],
-    );
+  Future<void> _loadSettings() async {
+    final prefs = await SharedPreferences.getInstance();
+    bool enabled = prefs.getBool('study_enableStartTime') ?? false;
+    String startTime = prefs.getString('study_startTime') ?? "08:00";
+    state = StudySettings(enableStudyStartTime: enabled, studyStartTime: startTime);
+  }
+
+  Future<void> setEnableStudyStartTime(bool value) async {
+    state = StudySettings(enableStudyStartTime: value, studyStartTime: state.studyStartTime);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('study_enableStartTime', value);
+  }
+
+  Future<void> setStudyStartTime(String time) async {
+    state = StudySettings(enableStudyStartTime: state.enableStudyStartTime, studyStartTime: time);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('study_startTime', time);
   }
 }
+
+// Riverpod 用のプロバイダー
+final studySettingsProvider =
+StateNotifierProvider<StudySettingsNotifier, StudySettings>(
+        (ref) => StudySettingsNotifier());
