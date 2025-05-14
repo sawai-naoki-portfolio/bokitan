@@ -31,12 +31,12 @@ environment:
 dependencies:
   math_expressions: ^2.1.1
   intl: ^0.17.0
-  flutter_launcher_icons: ^0.13.1
+  flutter_launcher_icons: ^0.14.1
   flutter:
     sdk: flutter
   flutter_riverpod: ^3.0.0-dev.3
   riverpod_annotation: ^3.0.0-dev.3
-  shared_preferences: ^2.0.15
+  shared_preferences: ^2.5.3
 
 flutter_launcher_icons:
   android: true
@@ -52,7 +52,7 @@ flutter_launcher_icons:
   cupertino_icons: ^1.0.8
 
 dev_dependencies:
-  flutter_native_splash: ^2.2.16
+  flutter_native_splash: ^2.4.6
   build_runner:
   custom_lint:
   riverpod_generator: ^3.0.0-dev.11
