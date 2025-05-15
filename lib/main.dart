@@ -1,19 +1,25 @@
+// *****************************************************************************
+// Flutter アプリ全体で利用するユーティリティやウィジェット、プロバイダーの定義
+// *****************************************************************************
+
 import 'dart:convert';
 import 'dart:math';
+
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart'; // JSON読み込み用、rootBundle利用
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
 import 'package:math_expressions/math_expressions.dart';
 
-/// BuildContext の拡張として、画面サイズに基づいた各種サイズを返すヘルパー
+/// ---------------------------------------------------------------------------
+/// BuildContext の拡張: 各種サイズ（パディング、アイコン、フォントサイズ等）を返す
+/// ---------------------------------------------------------------------------
 extension ResponsiveSizes on BuildContext {
-  /// 現在の画面サイズ（幅×高さ）
+  /// 現在の画面サイズ（幅×高さ）を返す
   Size get screenSize => MediaQuery.of(this).size;
 
-  // ── パディング系 ──
-
+  // 以下、画面サイズに応じた相対的なパディング値
   double get paddingExtraSmall => screenSize.width * 0.01;
 
   double get paddingSmall => screenSize.width * 0.02;
@@ -24,26 +30,22 @@ extension ResponsiveSizes on BuildContext {
 
   double get paddingExtraLarge => screenSize.width * 0.08;
 
-  // ── ボタン系 ──
-
+  // ボタンサイズ
   double get buttonHeight => screenSize.height * 0.07;
 
   double get buttonWidth => screenSize.width * 0.8;
 
-  // ── アイコン系 ──
-
+  // アイコンサイズ
   double get iconSizeSmall => screenSize.width * 0.05;
 
   double get iconSizeMedium => screenSize.width * 0.07;
 
   double get iconSizeLarge => screenSize.width * 0.09;
 
-  // ── テキストフィールド系 ──
-
+  // テキストフィールド高さ
   double get textFieldHeight => screenSize.height * 0.06;
 
-  // ── フォントサイズ系 ──
-
+  // フォントサイズ
   double get fontSizeExtraSmall => screenSize.width * 0.03;
 
   double get fontSizeSmall => screenSize.width * 0.035;
@@ -54,8 +56,7 @@ extension ResponsiveSizes on BuildContext {
 
   double get fontSizeExtraLarge => screenSize.width * 0.05;
 
-  // ── SizedBox 用のスペース ──
-
+  // SizedBox 用のスペースウィジェット（垂直方向）
   SizedBox get verticalSpaceExtraSmall =>
       SizedBox(height: screenSize.height * 0.01);
 
@@ -66,6 +67,7 @@ extension ResponsiveSizes on BuildContext {
 
   SizedBox get verticalSpaceLarge => SizedBox(height: screenSize.height * 0.05);
 
+  // SizedBox 用のスペースウィジェット（水平方向）
   SizedBox get horizontalSpaceExtraSmall =>
       SizedBox(width: screenSize.width * 0.01);
 
@@ -76,9 +78,7 @@ extension ResponsiveSizes on BuildContext {
 
   SizedBox get horizontalSpaceLarge => SizedBox(width: screenSize.width * 0.05);
 
-  // ── Divider 用のサイズ ──
-
-  /// Divider の高さ。ここでの「高さ」は Divider ウィジェット全体が占める垂直方向のスペース
+  // Divider 用のサイズ・太さ
   double get dividerHeightExtraSmall => screenSize.height * 0.01;
 
   double get dividerHeightSmall => screenSize.height * 0.015;
@@ -87,10 +87,14 @@ extension ResponsiveSizes on BuildContext {
 
   double get dividerHeightLarge => screenSize.height * 0.025;
 
-  /// Divider の線の太さ（thickness）
   double get dividerThickness => screenSize.width * 0.003;
 }
 
+/// ---------------------------------------------------------------------------
+/// SwipeToDeleteCard
+/// ─ このウィジェットはスワイプして削除するためのカードをラップします。
+///   削除前に確認ダイアログを表示し、削除が確定されたときに onDismissed コールバックを呼び出します。
+/// ---------------------------------------------------------------------------
 class SwipeToDeleteCard extends StatelessWidget {
   final Widget child;
   final Key keyValue;
@@ -116,9 +120,11 @@ class SwipeToDeleteCard extends StatelessWidget {
         color: Colors.red,
         child: const Icon(Icons.delete, color: Colors.white),
       ),
+      // 削除前に確認処理を行う
       confirmDismiss: (direction) async {
         return await onConfirm();
       },
+      // 削除が決定した場合の処理
       onDismissed: (direction) {
         onDismissed();
       },
@@ -127,23 +133,28 @@ class SwipeToDeleteCard extends StatelessWidget {
   }
 }
 
-// カンマ区切りで金額をフォーマットするTextInputFormatter
+/// ---------------------------------------------------------------------------
+/// ThousandsSeparatorInputFormatter
+/// ─ この入力フォーマッターは、数字入力中に自動でカンマ区切りのフォーマットに変換します。
+/// ---------------------------------------------------------------------------
 class ThousandsSeparatorInputFormatter extends TextInputFormatter {
   final NumberFormat _formatter = NumberFormat('#,###');
 
   @override
   TextEditingValue formatEditUpdate(
       TextEditingValue oldValue, TextEditingValue newValue) {
-    // 空の場合はそのまま返す
+    // 入力が空の場合はそのまま返す
     if (newValue.text.isEmpty) return newValue;
-    // 数字以外の文字（カンマなど）を除去
+
+    // 数字以外 (カンマなど) を除去する
     String numericString = newValue.text.replaceAll(RegExp('[^0-9]'), '');
     if (numericString.isEmpty) return newValue;
-    // 数字があればintに変換し、フォーマットする
+
+    // 文字列を整数に変換し、フォーマット後の文字列を生成
     final int value = int.parse(numericString);
     final String newText = _formatter.format(value);
 
-    // カーソル位置は末尾に固定（必要に応じて調整可）
+    // カーソルを常に末尾に設定
     return TextEditingValue(
       text: newText,
       selection: TextSelection.collapsed(offset: newText.length),
@@ -151,28 +162,30 @@ class ThousandsSeparatorInputFormatter extends TextInputFormatter {
   }
 }
 
-/// --- 共通ヘルパーメソッド ---
-/// 単語詳細ダイアログを表示する
-// メモを SharedPreferences から読み込む（毎回最新の値を反映）
+/// ---------------------------------------------------------------------------
+/// loadMemo
+/// ─ SharedPreferencesから指定されたProductに対応するメモを読み込む
+/// ---------------------------------------------------------------------------
 Future<String> loadMemo(Product product) async {
   final prefs = await SharedPreferences.getInstance();
   return prefs.getString('memo_${product.name}') ?? "";
 }
-// 単語詳細ダイアログ
 
-// 単語詳細ダイアログ
+/// ---------------------------------------------------------------------------
+/// showProductDialog
+/// ─ 単語の詳細ダイアログを表示するウィジェット。
+///   内部でStatefulBuilderを用いて、最新のメモ情報などの再描画を最小限の範囲で実施。
+/// ---------------------------------------------------------------------------
 void showProductDialog(BuildContext context, Product product) {
   showDialog(
     context: context,
     builder: (context) {
-      // StatefulBuilder で AlertDialog 全体の再描画を必要最小限に抑える
       return StatefulBuilder(
         builder: (context, setState) {
           return AlertDialog(
-            // タイトル部分：左側に商品名、右側にチェックボックス（チェックボックス部分は Consumer で独立）
+            // タイトル部に単語を大きく表示
             title: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Expanded(
                   child: Text(
@@ -185,31 +198,28 @@ void showProductDialog(BuildContext context, Product product) {
                 ),
               ],
             ),
-            // content 部分：最大高さを設定して SingleChildScrollView でスクロール可能に
+            // 内容部には単語説明と、その単語のメモを表示
             content: Container(
               constraints: BoxConstraints(
                 maxHeight: MediaQuery.of(context).size.height * 0.5,
               ),
               child: SingleChildScrollView(
                 child: Column(
-                  mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // 商品説明
                     Text(product.description),
                     context.verticalSpaceMedium,
-                    // 毎回最新の memo を反映する MemoDisplay を利用
                     MemoDisplay(product: product),
                   ],
                 ),
               ),
             ),
             actions: [
-              // 「メモを書く」ボタン：メモ入力後に setState で AlertDialog を再描画
+              // メモ入力ダイアログを表示して、入力後に再描画
               TextButton(
                 onPressed: () async {
                   await showMemoDialog(context, product);
-                  setState(() {}); // 保存後に再描画して最新のメモを反映
+                  setState(() {});
                 },
                 child: const Text("メモを書く"),
               ),
@@ -227,9 +237,11 @@ void showProductDialog(BuildContext context, Product product) {
     },
   );
 }
-// メモ表示用ウィジェット（キャッシュせずに常に最新の memo を読み込む）
 
-// メモ表示ウィジェット（キャッシュせずに毎回 loadMemo を呼び出す）
+/// ---------------------------------------------------------------------------
+/// MemoDisplay
+/// ─ このウィジェットは、各Productに対応するメモ内容を表示します（非キャッシュ）。
+/// ---------------------------------------------------------------------------
 class MemoDisplay extends StatelessWidget {
   final Product product;
 
@@ -237,8 +249,8 @@ class MemoDisplay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // ConstrainedBox で最低50pxの高さを確保
     return ConstrainedBox(
+      // 最低50pxの高さを確保
       constraints: const BoxConstraints(minHeight: 50),
       child: FutureBuilder<String>(
         future: loadMemo(product),
@@ -252,7 +264,9 @@ class MemoDisplay extends StatelessWidget {
             return Text(
               "メモ: $memo",
               style: TextStyle(
-                  fontSize: context.fontSizeExtraSmall, color: Colors.grey),
+                fontSize: context.fontSizeExtraSmall,
+                color: Colors.grey,
+              ),
             );
           }
           return const SizedBox();
@@ -262,13 +276,14 @@ class MemoDisplay extends StatelessWidget {
   }
 }
 
-// ユーザーが自由にメモ入力できるダイアログ
-// ユーザーが自由にメモ入力できるダイアログ
+/// ---------------------------------------------------------------------------
+/// showMemoDialog
+/// ─ Productに対してユーザーがメモを書き込む入力ダイアログを表示する
+/// ---------------------------------------------------------------------------
 Future<void> showMemoDialog(BuildContext context, Product product) async {
   final prefs = await SharedPreferences.getInstance();
   final String initialMemo = prefs.getString('memo_${product.name}') ?? "";
-  final TextEditingController controller =
-      TextEditingController(text: initialMemo);
+  final controller = TextEditingController(text: initialMemo);
 
   await showDialog(
     context: context,
@@ -277,10 +292,8 @@ Future<void> showMemoDialog(BuildContext context, Product product) async {
         title: const Text("メモを書く"),
         content: TextField(
           controller: controller,
-          decoration: const InputDecoration(
-            hintText: "ここにメモを入力してください",
-          ),
-          maxLines: null, // 複数行入力可能
+          decoration: const InputDecoration(hintText: "ここにメモを入力してください"),
+          maxLines: null,
         ),
         actions: [
           TextButton(
@@ -304,7 +317,10 @@ Future<void> showMemoDialog(BuildContext context, Product product) async {
   );
 }
 
-/// 新規カテゴリー作成ダイアログを表示する
+/// ---------------------------------------------------------------------------
+/// showCategoryCreationDialog
+/// ─ 新規カテゴリーを作成するためのシンプルな入力ダイアログを表示する
+/// ---------------------------------------------------------------------------
 Future<String?> showCategoryCreationDialog(BuildContext context) async {
   String temp = "";
   return showDialog<String>(
@@ -331,7 +347,10 @@ Future<String?> showCategoryCreationDialog(BuildContext context) async {
   );
 }
 
-/// カテゴリー削除の確認ダイアログを表示する
+/// ---------------------------------------------------------------------------
+/// showCategoryDeleteDialog
+/// ─ カテゴリー削除前の確認ダイアログを表示する
+/// ---------------------------------------------------------------------------
 Future<bool?> showCategoryDeleteDialog(
     BuildContext context, String categoryName) {
   return showDialog<bool>(
@@ -353,6 +372,10 @@ Future<bool?> showCategoryDeleteDialog(
   );
 }
 
+/// ---------------------------------------------------------------------------
+/// generateQuizQuestions
+/// ─ quizPool（出題対象）と distractorPool（誤答候補）から、指定数のクイズ問題を生成する
+/// ---------------------------------------------------------------------------
 List<WordTestQuestion> generateQuizQuestions(
     List<Product> quizPool, List<Product> distractorPool,
     {int quizCount = 10}) {
@@ -360,21 +383,21 @@ List<WordTestQuestion> generateQuizQuestions(
   final quizProducts = (List<Product>.from(quizPool)..shuffle(random))
       .take(min(quizCount, quizPool.length))
       .toList();
+
   return quizProducts.map((product) {
-    // distractorPool から正解以外の候補を抽出
+    // distractorPoolから誤答候補を抽出
     List<String> distractors = distractorPool
         .where((p) => p.name != product.name)
         .map((p) => p.name)
         .toList();
     distractors.shuffle(random);
 
-    // 正しい回答とダミー候補から必ず3個取得（足りなければダミーの"選択肢なし"で埋める）
+    // 正答と誤答候補を混ぜ、必ず4つの選択肢を用意
     List<String> options = [product.name];
     if (distractors.length >= 3) {
       options.addAll(distractors.take(3));
     } else {
       options.addAll(distractors);
-      // 足りない場合はダミー文言で埋める（必要に応じて適宜変更してください）
       while (options.length < 4) {
         options.add("選択肢なし");
       }
@@ -384,13 +407,29 @@ List<WordTestQuestion> generateQuizQuestions(
   }).toList();
 }
 
-/// --- 共通ウィジェット ---
-/// 単語カード（ListTileを内包したカード）
+/// ---------------------------------------------------------------------------
+/// WordTestQuestion
+/// ─ 単語テストの各問題を管理するデータクラス
+/// ---------------------------------------------------------------------------
+class WordTestQuestion {
+  final Product product;
+  final List<String> options;
+  String? userAnswer; // ユーザーが選んだ回答
+
+  WordTestQuestion({required this.product, required this.options});
+
+  bool get isCorrect => userAnswer == product.name;
+}
+
+/// ---------------------------------------------------------------------------
+/// ProductCard
+/// ─ 各単語の情報（名前、説明など）を表示するカードウィジェット
+/// ---------------------------------------------------------------------------
 class ProductCard extends StatelessWidget {
   final Product product;
   final Widget? trailing;
   final VoidCallback? onTap;
-  final VoidCallback? onLongPress; // 追加
+  final VoidCallback? onLongPress;
   final EdgeInsets margin;
 
   const ProductCard({
@@ -398,7 +437,7 @@ class ProductCard extends StatelessWidget {
     required this.product,
     this.trailing,
     this.onTap,
-    this.onLongPress, // 追加
+    this.onLongPress,
     this.margin = const EdgeInsets.all(10.0),
   });
 
@@ -409,6 +448,7 @@ class ProductCard extends StatelessWidget {
       elevation: 4,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: ListTile(
+        // 左側に円形アバター（先頭文字を表示）
         leading: CircleAvatar(
           backgroundColor: Colors.blue.shade300,
           child: Text(
@@ -427,18 +467,21 @@ class ProductCard extends StatelessWidget {
         ),
         trailing: trailing,
         onTap: onTap,
-        onLongPress: onLongPress, // 追加
+        onLongPress: onLongPress,
       ),
     );
   }
 }
 
-/// --- モデル・プロバイダー系 ---
+/// ---------------------------------------------------------------------------
+/// Product クラス
+/// ─ 単語（もしくは単語）のデータモデル。各単語は名前、読み仮名、説明、カテゴリーを保持します。
+/// ---------------------------------------------------------------------------
 class Product {
   final String name;
   final String yomigana;
   final String description;
-  final String category; // 追加
+  final String category;
 
   Product({
     required this.name,
@@ -452,23 +495,28 @@ class Product {
       name: json['name'],
       yomigana: json['yomigana'] ?? "",
       description: json['description'],
-      category: json['category'] ?? '未分類', // デフォルト値などを設定可能
+      category: json['category'] ?? '未分類',
     );
   }
 }
 
-/// JSONファイルから単語データを読み込むProvider
+/// ---------------------------------------------------------------------------
+/// productsProvider
+/// ─ アセットのJSONファイルから単語リストを非同期で読み込むProvider
+/// ---------------------------------------------------------------------------
 final productsProvider = FutureProvider<List<Product>>((ref) async {
   final data = await rootBundle.loadString('assets/products.json');
   final jsonResult = jsonDecode(data) as List;
   return jsonResult.map((json) => Product.fromJson(json)).toList();
 });
 
-/// 検索クエリの状態管理
+/// 検索クエリの状態を管理するProvider
 final searchQueryProvider = StateProvider<String>((ref) => '');
 
-// SavedItemsNotifier (saved_itemsの管理)
-// 並び替え用のメソッドを追加
+/// ---------------------------------------------------------------------------
+/// SavedItemsNotifier
+/// ─ ユーザーが保存した単語の名前を管理し、SharedPreferences に保存する
+/// ---------------------------------------------------------------------------
 class SavedItemsNotifier extends StateNotifier<List<String>> {
   SavedItemsNotifier() : super([]) {
     _loadSavedItems();
@@ -496,7 +544,6 @@ class SavedItemsNotifier extends StateNotifier<List<String>> {
     }
   }
 
-  // 新たに並び順を更新するメソッド
   Future<void> reorderItems(List<String> newOrder) async {
     state = newOrder;
     final prefs = await SharedPreferences.getInstance();
@@ -506,12 +553,16 @@ class SavedItemsNotifier extends StateNotifier<List<String>> {
 
 final savedItemsProvider =
     StateNotifierProvider<SavedItemsNotifier, List<String>>(
-        (ref) => SavedItemsNotifier());
+  (ref) => SavedItemsNotifier(),
+);
 
-// 非表示にした単語名を保持するプロバイダー
+/// 非表示にした単語の名前を保持する Provider
 final hiddenSavedProvider = StateProvider<Set<String>>((ref) => {});
 
-/// カテゴリモデル：ユーザーが登録する各カテゴリ
+/// ---------------------------------------------------------------------------
+/// Category クラス
+/// ─ ユーザーが登録するカテゴリー。各カテゴリーは名前と所属する単語の名前リストを保持します。
+/// ---------------------------------------------------------------------------
 class Category {
   final String name;
   final List<String> products;
@@ -532,7 +583,10 @@ class Category {
   }
 }
 
-/// カテゴリ管理の状態（作成・編集・削除、単語の所属更新、並び替え）
+/// ---------------------------------------------------------------------------
+/// CategoriesNotifier
+/// ─ カテゴリーの作成、更新、削除および単語の所属更新、並び替えを管理する
+/// ---------------------------------------------------------------------------
 class CategoriesNotifier extends StateNotifier<List<Category>> {
   CategoriesNotifier() : super([]) {
     _loadCategories();
@@ -543,7 +597,6 @@ class CategoriesNotifier extends StateNotifier<List<Category>> {
     state = state.map((c) {
       if (c.name == categoryName) {
         List<String> newProducts = List.from(c.products);
-        // ここでの newIndex の補正処理は削除する（UI 側で処理済み）
         final item = newProducts.removeAt(oldIndex);
         newProducts.insert(newIndex, item);
         return Category(name: c.name, products: newProducts);
@@ -592,17 +645,14 @@ class CategoriesNotifier extends StateNotifier<List<Category>> {
     await _saveCategories();
   }
 
-  /// 並び替え処理
   Future<void> reorderCategories(int oldIndex, int newIndex) async {
     List<Category> updated = List.from(state);
-    // ここでは newIndex の補正処理は不要です
     final Category item = updated.removeAt(oldIndex);
     updated.insert(newIndex, item);
     state = updated;
     await _saveCategories();
   }
 
-  /// 指定のカテゴリに対して、単語所属の更新
   Future<void> updateProductAssignment(
       String categoryName, String productName, bool assigned) async {
     state = state.map((c) {
@@ -627,21 +677,18 @@ final categoriesProvider =
     StateNotifierProvider<CategoriesNotifier, List<Category>>(
         (ref) => CategoriesNotifier());
 
-/// 単語テスト用のクイズ問題クラス
-class WordTestQuestion {
-  final Product product;
-  final List<String> options;
-  String? userAnswer; //ユーザーが選んだ回答
-
-  WordTestQuestion({required this.product, required this.options});
-
-  bool get isCorrect => userAnswer == product.name;
-}
-
+/// ---------------------------------------------------------------------------
+/// CategoryItemWidget
+/// ─────────────────────────────────────────────────────────
+/// このウィジェットは、1件のカテゴリ内単語をリスト表示する際に利用します。
+/// ・スワイプで削除（確認ダイアログ付き）
+/// ・長押しで削除確認のダイアログを個別に表示
+/// ・ドラッグ＆ドロップによる並び替えハンドルを提供
+/// ---------------------------------------------------------------------------
 class CategoryItemWidget extends ConsumerWidget {
-  final Product product;
-  final int index;
-  final Category currentCategory;
+  final Product product; // 表示する対象単語
+  final int index; // リスト内のインデックス
+  final Category currentCategory; // 現在のカテゴリ情報
 
   const CategoryItemWidget({
     super.key,
@@ -650,6 +697,10 @@ class CategoryItemWidget extends ConsumerWidget {
     required this.currentCategory,
   });
 
+  /// [_deleteItem]
+  /// ─────────────────────────────────────────────────────────
+  /// 長押し時に呼び出される削除確認ダイアログを表示するメソッドです。
+  /// ユーザーが削除を承認した場合、対象カテゴリからこの単語を除去します。
   Future<void> _deleteItem(BuildContext context, WidgetRef ref) async {
     bool? confirm = await showDialog<bool>(
       context: context,
@@ -658,10 +709,12 @@ class CategoryItemWidget extends ConsumerWidget {
           title: const Text("削除確認"),
           content: Text("${product.name} を削除してよろしいですか？"),
           actions: [
+            // キャンセルボタン：何もせず閉じる
             TextButton(
               onPressed: () => Navigator.pop(context, false),
               child: const Text("キャンセル"),
             ),
+            // 削除ボタン：削除処理を実行
             ElevatedButton(
               onPressed: () => Navigator.pop(context, true),
               child: const Text("削除"),
@@ -677,13 +730,17 @@ class CategoryItemWidget extends ConsumerWidget {
     }
   }
 
+  /// [build]
+  /// ─────────────────────────────────────────────────────────
+  /// スワイプ（Dismissible）と長押し（GestureDetector）による操作が統合されたカード型ウィジェットを返します。
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Dismissible(
       key: ValueKey(product.name),
       direction: DismissDirection.endToStart,
-      // confirmDismiss で左スワイプによる削除の前に確認ダイアログを表示
+      // 右端から左端へのスワイプで削除
       confirmDismiss: (direction) async {
+        // スワイプ時も削除確認ダイアログを表示
         final bool? result = await showDialog<bool>(
           context: context,
           builder: (BuildContext context) {
@@ -711,26 +768,28 @@ class CategoryItemWidget extends ConsumerWidget {
         color: Colors.red,
         child: const Icon(Icons.delete, color: Colors.white),
       ),
+      // スワイプ完了後に削除処理を呼び出す
       onDismissed: (direction) async {
         await ref
             .read(categoriesProvider.notifier)
             .updateProductAssignment(currentCategory.name, product.name, false);
       },
+      // 長押しで個別の削除ダイアログを起動
       child: GestureDetector(
-        // 長押し時にも同様の削除確認ダイアログを表示
         onLongPress: () async {
           await _deleteItem(context, ref);
         },
         child: Card(
           elevation: 4,
           margin: EdgeInsets.symmetric(
-              vertical: context.paddingMedium,
-              horizontal: context.paddingMedium),
+            vertical: context.paddingMedium,
+            horizontal: context.paddingMedium,
+          ),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
           child: ListTile(
-            // 左側にドラッグハンドル（二点ボタン）を配置
+            // 並び替え開始ハンドルの提供
             leading: ReorderableDragStartListener(
               index: index,
               child: const Icon(Icons.drag_handle),
@@ -754,13 +813,16 @@ class CategoryItemWidget extends ConsumerWidget {
   }
 }
 
-// ☆ 新規ウィジェット: CategoryItemCard
-// 　ProductCardと同様のUIを利用し、全体をReorderableDelayedDragStartListenerでラップすることで
-// 　長押しでドラッグ（並び替え）できるようにします。
+/// ---------------------------------------------------------------------------
+/// CategoryItemCard
+/// ─────────────────────────────────────────────────────────
+/// このウィジェットは、ドラッグ操作による並び替えが必要な場合に利用するシンプルな
+/// カード形式の表示ウィジェットです。タップすると単語の詳細ダイアログを表示します。
+/// ---------------------------------------------------------------------------
 class CategoryItemCard extends ConsumerWidget {
-  final Product product;
-  final int index;
-  final Category currentCategory;
+  final Product product; // 表示対象の単語の情報
+  final int index; // リスト内の位置（ドラッグ操作用）
+  final Category currentCategory; // 所属するカテゴリ情報
 
   const CategoryItemCard({
     super.key,
@@ -775,22 +837,25 @@ class CategoryItemCard extends ConsumerWidget {
       index: index,
       child: ProductCard(
         product: product,
-        // onTapは商品詳細ダイアログを表示する既存の処理を流用
         onTap: () => showProductDialog(context, product),
-        // ProductCardの見た目は SearchPage と同じUI（CircleAvatar, タイトル, サブタイトル）
         margin: EdgeInsets.symmetric(
-            vertical: context.paddingMedium, horizontal: context.paddingMedium),
+          vertical: context.paddingMedium,
+          horizontal: context.paddingMedium,
+        ),
       ),
     );
   }
 }
 
-// SavedItemCard：保存した単語一覧用のカードウィジェット
-// ProductCardと同じ見た目を利用し、ReorderableDelayedDragStartListenerで
-// カード全体を長押しでドラッグ可能にしています。
+/// ---------------------------------------------------------------------------
+/// SavedItemCard
+/// ─────────────────────────────────────────────────────────
+/// 保存済み（お気に入りなど）の単語のカード表示ウィジェットです。
+/// CategoryItemCard と非常に似ていますが、主に保存された単語の一覧表示で用いられます。
+/// ---------------------------------------------------------------------------
 class SavedItemCard extends ConsumerWidget {
-  final Product product;
-  final int index;
+  final Product product; // 表示対象の単語の情報
+  final int index; // 保存リスト内のインデックス
 
   const SavedItemCard({
     super.key,
@@ -806,35 +871,47 @@ class SavedItemCard extends ConsumerWidget {
         product: product,
         onTap: () => showProductDialog(context, product),
         margin: EdgeInsets.symmetric(
-            vertical: context.paddingMedium, horizontal: context.paddingMedium),
+          vertical: context.paddingMedium,
+          horizontal: context.paddingMedium,
+        ),
       ),
     );
   }
 }
 
-// ☆ 修正後の CategoryItemsPageState
-// ・従来のCategoryItemWidget（Dismissible や長押し削除処理付き）を廃止して
-// 　新規ウィジェット CategoryItemCard を利用します。
-// ・リスト項目は ProductCard の見た目をそのまま利用
+class CategoryItemsPage extends ConsumerStatefulWidget {
+  final Category category;
+
+  const CategoryItemsPage({super.key, required this.category});
+
+  @override
+  CategoryItemsPageState createState() => CategoryItemsPageState();
+}
+
+/// ---------------------------------------------------------------------------
+/// CategoryItemsPageState
+/// ─────────────────────────────────────────────────────────
+/// カテゴリ内に属する単語の一覧ページを管理する状態クラスです。
+/// 画面表示モードとして通常リストと並び替え用のリストを切り替えて表示します。
+/// ---------------------------------------------------------------------------
 class CategoryItemsPageState extends ConsumerState<CategoryItemsPage> {
-  bool _isSorting = false; // 並び替えモードを管理するフラグ
+  bool _isSorting = false; // 並び替えモードか通常表示かのフラグ
 
   @override
   Widget build(BuildContext context) {
-    // 現在のカテゴリ情報を取得（最新のもので上書き）
+    // Riverpodから全カテゴリと全単語の状態を取得し、現在のカテゴリを特定
     final allCategories = ref.watch(categoriesProvider);
     final currentCategory = allCategories.firstWhere(
       (cat) => cat.name == widget.category.name,
       orElse: () => widget.category,
     );
-    // assets側のプロダクトやユーザー追加分などを統合した全商品一覧
     final allProducts = ref.watch(allProductsProvider);
-    // カテゴリーに登録済みの商品一覧（順番は currentCategory.products の順）
+
+    // 現在のカテゴリに属する単語のリストを、プロダクト名をキーにして抽出
     final filtered = currentCategory.products.map((productName) {
       return allProducts.firstWhere((p) => p.name == productName);
     }).toList();
 
-    // カテゴリー名は後々各処理に利用するため変数に格納
     final categoryName = currentCategory.name;
 
     return Scaffold(
@@ -842,11 +919,11 @@ class CategoryItemsPageState extends ConsumerState<CategoryItemsPage> {
         title: Text("カテゴリー: $categoryName"),
         centerTitle: true,
         actions: [
-          // 並び替えモード中はチェックアイコンを表示し、そのタップで通常モードに戻す
           if (_isSorting)
             IconButton(
               icon: const Icon(Icons.check),
               onPressed: () {
+                // 並び替えモード終了のためのチェックボタン
                 setState(() {
                   _isSorting = false;
                 });
@@ -855,15 +932,17 @@ class CategoryItemsPageState extends ConsumerState<CategoryItemsPage> {
         ],
       ),
       body: filtered.isEmpty
-          ? const Center(child: Text("このカテゴリーに商品はありません"))
+          ? const Center(child: Text("このカテゴリーに単語はありません"))
           : _isSorting
-              ? _buildSortingList(filtered, categoryName)
-              : _buildNormalList(filtered, categoryName),
+              ? _buildSortingList(filtered, categoryName) // 並び替えモード表示
+              : _buildNormalList(filtered, categoryName), // 通常リスト表示
     );
   }
 
-  /// 通常モード：WordListPage と同じ単語リスト表示
-  /// 通常モード：各カテゴリーに登録済みの商品のリスト表示
+  /// [_buildNormalList]
+  /// ─────────────────────────────────────────────────────────
+  /// 通常モードでの単語一覧表示用ウィジェットを構築します。
+  /// 各カードはスワイプや長押しでの各種アクション（保存、削除、他）が操作可能です。
   Widget _buildNormalList(List<Product> products, String categoryName) {
     return ListView.builder(
       itemCount: products.length,
@@ -871,7 +950,7 @@ class CategoryItemsPageState extends ConsumerState<CategoryItemsPage> {
         final product = products[index];
         return SwipeToDeleteCard(
           keyValue: ValueKey(product.name),
-          // 削除前に確認ダイアログを表示
+          // 削除確認ダイアログの表示と結果による処理
           onConfirm: () async {
             return await showDialog<bool>(
                   context: context,
@@ -892,16 +971,15 @@ class CategoryItemsPageState extends ConsumerState<CategoryItemsPage> {
                 ) ??
                 false;
           },
-          // 削除が確定した際、商品割当状態を更新（削除）
           onDismissed: () async {
+            // スワイプ後に削除処理を実行
             await ref
                 .read(categoriesProvider.notifier)
                 .updateProductAssignment(categoryName, product.name, false);
           },
-          // 子ウィジェットには元々のProductCard（長押し時の下部シート表示付き）を配置
           child: GestureDetector(
             onLongPress: () {
-              // 長押し時に表示するアクションシート
+              // 長押しで各種操作メニュー（保存、チェック問題登録、並び替え、削除）のモーダルシートを表示
               showModalBottomSheet(
                 context: context,
                 builder: (BuildContext context) {
@@ -951,6 +1029,7 @@ class CategoryItemsPageState extends ConsumerState<CategoryItemsPage> {
                           onTap: () {
                             Navigator.pop(context);
                             setState(() {
+                              // 並び替えモードに移行
                               _isSorting = true;
                             });
                           },
@@ -975,8 +1054,9 @@ class CategoryItemsPageState extends ConsumerState<CategoryItemsPage> {
             child: ProductCard(
               product: product,
               margin: EdgeInsets.symmetric(
-                  vertical: context.paddingExtraSmall,
-                  horizontal: context.paddingExtraSmall),
+                vertical: context.paddingExtraSmall,
+                horizontal: context.paddingExtraSmall,
+              ),
               onTap: () => showProductDialog(context, product),
             ),
           ),
@@ -985,7 +1065,10 @@ class CategoryItemsPageState extends ConsumerState<CategoryItemsPage> {
     );
   }
 
-  /// 並び替えモード：ドラッグで並び替え可能なリスト表示
+  /// [_buildSortingList]
+  /// ─────────────────────────────────────────────────────────
+  /// 並び替えモード専用のリスト表示ウィジェットを作成します。
+  /// ドラッグ操作により単語の順番を更新できるようにしています。
   Widget _buildSortingList(List<Product> products, String categoryName) {
     return ReorderableListView.builder(
       itemCount: products.length,
@@ -1002,7 +1085,6 @@ class CategoryItemsPageState extends ConsumerState<CategoryItemsPage> {
         return ListTile(
           key: ValueKey(product.name),
           leading: const Icon(Icons.drag_handle),
-          // 並び替え状態ではsubtitleを表示せず、nameのみ表示
           title: Text(
             product.name,
             style: TextStyle(
@@ -1010,7 +1092,6 @@ class CategoryItemsPageState extends ConsumerState<CategoryItemsPage> {
               fontWeight: FontWeight.bold,
             ),
           ),
-          // Google Play Console のようなシンプルなデザインにするため、余分な情報は削除
           onTap: () => showProductDialog(context, product),
         );
       },
@@ -1018,19 +1099,28 @@ class CategoryItemsPageState extends ConsumerState<CategoryItemsPage> {
   }
 }
 
-/// チェックした問題（再テスト対象）の状態を永続化するプロバイダー
+/// ---------------------------------------------------------------------------
+/// CheckedQuestionsNotifier
+/// ─────────────────────────────────────────────────────────
+/// 単語チェック問題に登録した単語の名前をセットとして管理する状態クラスです。
+/// ・初期化時に SharedPreferences から読み込み
+/// ・add, remove, toggle の各操作で状態および永続化処理を実行
+/// ---------------------------------------------------------------------------
 class CheckedQuestionsNotifier extends StateNotifier<Set<String>> {
   CheckedQuestionsNotifier() : super({}) {
     _load();
   }
 
+  /// [_load]
+  /// SharedPreferencesから以前の登録済み単語のセットをロードします。
   Future<void> _load() async {
     final prefs = await SharedPreferences.getInstance();
     final list = prefs.getStringList('checked_questions') ?? [];
-    // ロードした結果と既存の state をマージする
     state = state.union(list.toSet());
   }
 
+  /// [add]
+  /// 指定された単語を状態に追加し、SharedPreferencesに保存します。
   Future<void> add(String productName) async {
     if (!state.contains(productName)) {
       state = {...state, productName};
@@ -1039,6 +1129,8 @@ class CheckedQuestionsNotifier extends StateNotifier<Set<String>> {
     }
   }
 
+  /// [remove]
+  /// 指定された単語を状態から除外し、SharedPreferencesに反映します。
   Future<void> remove(String productName) async {
     if (state.contains(productName)) {
       state = state.where((name) => name != productName).toSet();
@@ -1047,6 +1139,8 @@ class CheckedQuestionsNotifier extends StateNotifier<Set<String>> {
     }
   }
 
+  /// [toggle]
+  /// 単語が状態に含まれていれば削除、なければ追加するトグル動作を実行します。
   Future<void> toggle(String productName) async {
     if (state.contains(productName)) {
       await remove(productName);
@@ -1056,11 +1150,17 @@ class CheckedQuestionsNotifier extends StateNotifier<Set<String>> {
   }
 }
 
+/// Providerを通じて、アプリ内でチェックされた単語の状態を共有します。
 final checkedQuestionsProvider =
     StateNotifierProvider<CheckedQuestionsNotifier, Set<String>>(
         (ref) => CheckedQuestionsNotifier());
 
-// まず、必ず WidgetsBinding を初期化
+/// ---------------------------------------------------------------------------
+/// アプリエントリーポイント：main() と MyApp
+/// ─────────────────────────────────────────────────────────
+/// Flutterの初期化とRiverpodのProviderScopeでアプリ全体をラップし、
+/// MyAppウィジェットを起動します。
+/// ---------------------------------------------------------------------------
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -1071,6 +1171,9 @@ void main() async {
   );
 }
 
+/// [MyApp]
+/// ─────────────────────────────────────────────────────────
+/// アプリ全体のテーマ設定やホーム画面(SearchPage)を設定するルートウィジェットです。
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
@@ -1086,17 +1189,31 @@ class MyApp extends StatelessWidget {
           border: OutlineInputBorder(),
         ),
       ),
+      // ホーム画面はSearchPageで、ユーザーが単語の検索や操作を行えます
       home: const SearchPage(),
     );
   }
 }
+// *****************************************************************************
+// Custom Products to Word Test Page (Quiz Screen)
+// このセクションでは、ユーザーが追加した単語や検索・テスト画面に関するビジネスロジックとUIを管理します。
+// CustomProductsNotifier ～ _WordTestPageState までのクラスには、ユーザーによるカスタム単語の管理、
+// アセット＋カスタム単語の統合、単語検索画面、単語テスト（クイズ）画面などが含まれます。
+// *****************************************************************************
 
-// ユーザーが追加した商品を管理する Notifier
+/// ---------------------------------------------------------------------------
+/// CustomProductsNotifier
+/// ---------------------------------------------------------------------------
+/// ユーザーがアプリ上で追加したカスタム単語（Productオブジェクト）のリストを管理する
+/// StateNotifier。インスタンス化時に SharedPreferences からデータをロードし、
+/// addProduct() で新規単語を追加すると同時にストレージへ保存します。
 class CustomProductsNotifier extends StateNotifier<List<Product>> {
   CustomProductsNotifier() : super([]) {
     _loadCustomProducts();
   }
 
+  /// _loadCustomProducts()
+  /// SharedPreferences から保存済みのカスタム単語リストを読み込んで状態を初期化する
   Future<void> _loadCustomProducts() async {
     final prefs = await SharedPreferences.getInstance();
     final List<String>? productJsonList =
@@ -1109,9 +1226,12 @@ class CustomProductsNotifier extends StateNotifier<List<Product>> {
     }
   }
 
+  /// addProduct()
+  /// 新しいカスタム単語を状態に追加し、最新のリストを SharedPreferences に保存する
   Future<void> addProduct(Product product) async {
     state = [...state, product];
     final prefs = await SharedPreferences.getInstance();
+    // 保存する際は、必要なプロパティのみエンコードする
     final productJsonList = state
         .map((p) => jsonEncode({
               'name': p.name,
@@ -1123,25 +1243,35 @@ class CustomProductsNotifier extends StateNotifier<List<Product>> {
   }
 }
 
+/// プロバイダー定義：ユーザーが追加したカスタム単語を管理する
 final customProductsProvider =
     StateNotifierProvider<CustomProductsNotifier, List<Product>>(
         (ref) => CustomProductsNotifier());
 
+/// ---------------------------------------------------------------------------
+/// allProductsProvider
+/// ---------------------------------------------------------------------------
+/// アセット(JSON)からロードした単語とカスタム単語（ユーザー追加）を統合して返すシンプルなプロバイダー
 final allProductsProvider = Provider<List<Product>>((ref) {
   final assetProductsAsync = ref.watch(productsProvider);
   final customProducts = ref.watch(customProductsProvider);
   List<Product> assetProducts = [];
 
-  // assets側のデータが読み込まれている場合のみ統合
+  // FutureProvider の状態に合わせてアセット単語リストを抽出
   assetProductsAsync.when(
     data: (products) => assetProducts = products,
     loading: () {},
     error: (_, __) {},
   );
+  // 両方のリストを統合して返す
   return [...assetProducts, ...customProducts];
 });
 
-/// 単語検索ページ
+/// ---------------------------------------------------------------------------
+/// SearchPage
+/// ---------------------------------------------------------------------------
+/// 単語検索画面。ユーザーが単語名や読みから検索を行い、
+/// 結果がリスト表示され、各単語の詳細ダイアログなどへ遷移できる。
 class SearchPage extends ConsumerStatefulWidget {
   const SearchPage({super.key});
 
@@ -1149,18 +1279,23 @@ class SearchPage extends ConsumerStatefulWidget {
   ConsumerState<SearchPage> createState() => _SearchPageState();
 }
 
+/// _SearchPageState
+/// SearchPage の内部状態。検索クエリ、表示する単語のキャッシュ、
+/// 並び替え処理用の状態などを管理する
 class _SearchPageState extends ConsumerState<SearchPage> {
   final TextEditingController _controller = TextEditingController();
 
-  // 検索クエリが空の場合に利用するランダムな商品リストのキャッシュ
+  // 検索クエリ未入力時にランダムで表示する単語のキャッシュ
   List<Product>? _cachedRandomProducts;
 
-  // 並び替えモード用の状態変数
+  // 並び替えモード用の状態（今回は固定モードとして _isSorting は false）
   final bool _isSorting = false;
   List<Product>? _sortedProducts;
 
+  /// _onRefresh()
+  /// 画面プルダウンリフレッシュ時にキャッシュをクリアし、プロバイダーのデータを再読み込みする
   Future<void> _onRefresh() async {
-    _cachedRandomProducts = null; // キャッシュクリア
+    _cachedRandomProducts = null;
     await Future.delayed(const Duration(milliseconds: 1000));
     ref.invalidate(productsProvider);
   }
@@ -1171,7 +1306,8 @@ class _SearchPageState extends ConsumerState<SearchPage> {
     super.dispose();
   }
 
-  // 長押し時に表示するアクションシート（既存処理）
+  /// _showActionSheet()
+  /// 長押し時に表示するアクションシート。ここで単語の「保存」や「単語チェック問題」への登録処理を実行する
   void _showActionSheet(Product product) {
     showModalBottomSheet(
       context: context,
@@ -1184,6 +1320,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                 title: const Text("保存する"),
                 onTap: () {
                   Navigator.pop(context);
+                  // カテゴリーへの自動割当画面等の表示
                   showModalBottomSheet(
                     context: context,
                     builder: (context) =>
@@ -1196,6 +1333,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                 title: const Text("単語チェック問題に登録する"),
                 onTap: () {
                   Navigator.pop(context);
+                  // 既に登録されているかチェックし、なければ追加
                   final currentChecked = ref.read(checkedQuestionsProvider);
                   if (currentChecked.contains(product.name)) {
                     ScaffoldMessenger.of(context).showSnackBar(
@@ -1230,6 +1368,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: () {
+        // 画面タップ時にキーボードやフォーカスを外す
         FocusScope.of(context).unfocus();
       },
       child: Scaffold(
@@ -1241,7 +1380,9 @@ class _SearchPageState extends ConsumerState<SearchPage> {
               icon: const Icon(Icons.menu),
               tooltip: 'メニュー',
               onPressed: () {
+                // メニュー表示時にもキーボードフォーカスを解除
                 FocusScope.of(context).unfocus();
+                // 下部モーダルシートで各種機能（保存一覧、カテゴリー、クイズ、設定など）へ遷移
                 showModalBottomSheet(
                   context: context,
                   backgroundColor: Colors.transparent,
@@ -1451,12 +1592,13 @@ class _SearchPageState extends ConsumerState<SearchPage> {
             ),
           ],
         ),
+        // 検索入力欄と、検索結果またはランダム表示の単語リストを表示する
         body: RefreshIndicator(
           onRefresh: _onRefresh,
           child: ListView(
             physics: const AlwaysScrollableScrollPhysics(),
             children: [
-              // 検索入力フィールド
+              // 検索テキストフィールド
               Padding(
                 padding: EdgeInsets.all(context.paddingMedium),
                 child: TextField(
@@ -1473,7 +1615,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                   },
                 ),
               ),
-              // 単語リスト部分（既存処理）
+              // プロバイダーの状態に基づいた単語リストの表示処理
               productsAsync.when(
                 loading: () => Padding(
                   padding:
@@ -1484,12 +1626,14 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                 data: (products) {
                   List<Product> filteredProducts;
                   if (searchQuery.isNotEmpty) {
+                    // 検索クエリに一致する単語のみ抽出
                     filteredProducts = products.where((p) {
                       final query = searchQuery.toLowerCase();
                       return p.name.toLowerCase().contains(query) ||
                           p.yomigana.toLowerCase().contains(query);
                     }).toList();
                   } else {
+                    // 検索未入力時は、ランダムに15件表示（キャッシュして再計算を避ける）
                     _cachedRandomProducts ??= () {
                       final randomizedProducts = List<Product>.from(products);
                       randomizedProducts.shuffle();
@@ -1506,6 +1650,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                     );
                   }
 
+                  // 並び替えモードの場合（※今回は固定モード）
                   if (_isSorting) {
                     _sortedProducts ??= List<Product>.from(filteredProducts);
                     return SizedBox(
@@ -1538,6 +1683,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                       ),
                     );
                   } else {
+                    // 通常モード：ListView で単語カードを列挙
                     return Column(
                       children: filteredProducts.map((product) {
                         return GestureDetector(
@@ -1565,7 +1711,11 @@ class _SearchPageState extends ConsumerState<SearchPage> {
   }
 }
 
-/// 単語テストページ（10問出題）
+/// ---------------------------------------------------------------------------
+/// WordTestPage
+/// ---------------------------------------------------------------------------
+/// ユーザーがクイズ形式で単語テストに挑戦できる画面。各問題は単語の説明を基にして出題され、
+/// 選択肢をタップすると正誤判定が行われ、最終的なテスト結果画面に遷移します。
 class WordTestPage extends ConsumerStatefulWidget {
   const WordTestPage({super.key});
 
@@ -1573,10 +1723,16 @@ class WordTestPage extends ConsumerStatefulWidget {
   ConsumerState<WordTestPage> createState() => _WordTestPageState();
 }
 
+/// _WordTestPageState
+/// ---------------------------------------------------------------------------
+/// 単語テスト（クイズ）の状態を管理するクラス。クイズの問題リスト生成、
+/// ユーザーの選択に応じた正誤判定、次の問題への遷移などのロジックを内包しています。
 class _WordTestPageState extends ConsumerState<WordTestPage> {
-  List<WordTestQuestion> quiz = [];
-  int currentQuestionIndex = 0;
+  List<WordTestQuestion> quiz = []; // 出題用の問題リスト
+  int currentQuestionIndex = 0; // 現在の問題番号を管理
 
+  /// _generateQuiz()
+  /// 指定された単語リストからランダムにクイズ問題を生成する
   void _generateQuiz(List<Product> products) {
     quiz = generateQuizQuestions(products, products, quizCount: 10);
     currentQuestionIndex = 0;
@@ -1590,6 +1746,7 @@ class _WordTestPageState extends ConsumerState<WordTestPage> {
         title: const Text("単語テスト"),
       ),
       body: productsAsync.when(
+        // データ読み込み中はプログレスインジケーターを表示
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, _) => Center(child: Text("データ読み込みエラー: $error")),
         data: (products) {
@@ -1600,6 +1757,7 @@ class _WordTestPageState extends ConsumerState<WordTestPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                // 問題番号と総問題数の表示
                 Text(
                   "問題 ${currentQuestionIndex + 1} / ${quiz.length}",
                   style: TextStyle(
@@ -1607,11 +1765,13 @@ class _WordTestPageState extends ConsumerState<WordTestPage> {
                       fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 16),
+                // 問題（単語の説明）の表示
                 Text(
                   "問題：${currentQuestion.product.description}",
                   style: TextStyle(fontSize: context.fontSizeMedium),
                 ),
                 const SizedBox(height: 24),
+                // 選択肢ボタン群：ユーザー選択後、正解・不正解の色分けを反映
                 ...currentQuestion.options.map((option) {
                   Color? btnColor;
                   if (currentQuestion.userAnswer != null) {
@@ -1633,12 +1793,13 @@ class _WordTestPageState extends ConsumerState<WordTestPage> {
                               setState(() {
                                 currentQuestion.userAnswer = option;
                               });
+                              // 正解でない場合、ミス回数もインクリメント
                               if (!currentQuestion.isCorrect) {
-                                // 回答が不正解の場合、ミス回数を更新
                                 ref
                                     .read(mistakeCountsProvider.notifier)
                                     .increment(currentQuestion.product.name);
                               }
+                              // 1秒後に次の問題または結果画面へ遷移
                               await Future.delayed(const Duration(seconds: 1));
                               if (currentQuestionIndex < quiz.length - 1) {
                                 setState(() {
@@ -1655,12 +1816,15 @@ class _WordTestPageState extends ConsumerState<WordTestPage> {
                               }
                             }
                           : null,
-                      child: Text(option,
-                          style: TextStyle(fontSize: context.fontSizeMedium)),
+                      child: Text(
+                        option,
+                        style: TextStyle(fontSize: context.fontSizeMedium),
+                      ),
                     ),
                   );
                 }),
                 const SizedBox(height: 16),
+                // ユーザーの回答に応じたフィードバック表示
                 if (currentQuestion.userAnswer != null)
                   Text(
                     currentQuestion.isCorrect
@@ -1683,19 +1847,27 @@ class _WordTestPageState extends ConsumerState<WordTestPage> {
   }
 }
 
-// 修正例：テスト結果画面に遷移元を識別するフラグを追加
+/// ---------------------------------------------------------------------------
+/// WordTestResultPage
+/// ---------------------------------------------------------------------------
+/// 単語テスト（クイズ）の結果画面を表示するウィジェットです。
+/// ・全体の正解数を表示し、各問題に対して、
+///   問題番号、問題文（単語の説明）、ユーザーの回答、正解・不正解の表示、
+///   選択肢一覧、累計ミス回数、解説をカード形式で詳細に表示します。
+/// ・画面下部にはホームに戻るボタンや、テストの再挑戦ボタンを配置しています。
 class WordTestResultPage extends ConsumerWidget {
-  final List<WordTestQuestion> quiz;
-  final bool isCheckboxTest; // チェックボックス問題からのテストかどうかのフラグ
+  final List<WordTestQuestion> quiz; // 出題されたクイズ問題リスト
+  final bool isCheckboxTest; // チェックボックステストかどうかのフラグ
 
   const WordTestResultPage({
     super.key,
     required this.quiz,
-    this.isCheckboxTest = false, // デフォルトは単語テストとして扱う
+    this.isCheckboxTest = false,
   });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // 正解数を集計
     int correctCount = quiz.where((q) => q.isCorrect).length;
     return Scaffold(
       appBar: AppBar(
@@ -1705,6 +1877,7 @@ class WordTestResultPage extends ConsumerWidget {
         padding: EdgeInsets.all(context.paddingSmall),
         child: Column(
           children: [
+            // 結果表示（正解数／総問題数）
             Text(
               "結果：$correctCount / ${quiz.length} 問正解",
               style: TextStyle(
@@ -1714,7 +1887,7 @@ class WordTestResultPage extends ConsumerWidget {
               ),
             ),
             const SizedBox(height: 20),
-
+            // 各問題の詳細結果を、ListView.separated でカード形式に表示
             Expanded(
               child: ListView.separated(
                 separatorBuilder: (context, index) =>
@@ -1729,6 +1902,7 @@ class WordTestResultPage extends ConsumerWidget {
                     elevation: 6,
                     child: Stack(
                       children: [
+                        // 問題の詳細および回答結果をグラデーション背景に表示
                         Container(
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(20),
@@ -1754,6 +1928,7 @@ class WordTestResultPage extends ConsumerWidget {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
+                              // 問題番号表示
                               Text(
                                 "問題 ${index + 1}",
                                 style: TextStyle(
@@ -1762,12 +1937,14 @@ class WordTestResultPage extends ConsumerWidget {
                                 ),
                               ),
                               const SizedBox(height: 10),
+                              // 問題文（単語の説明）
                               Text(
                                 question.product.description,
                                 style:
                                     TextStyle(fontSize: context.fontSizeSmall),
                               ),
                               const SizedBox(height: 12),
+                              // ユーザーの回答が正解か不正解かを表示するラベル
                               Container(
                                 padding: EdgeInsets.symmetric(
                                     vertical: context.paddingSmall,
@@ -1790,6 +1967,7 @@ class WordTestResultPage extends ConsumerWidget {
                                 ),
                               ),
                               const SizedBox(height: 12),
+                              // ユーザーの回答と正解を比較して表示
                               Text.rich(
                                 TextSpan(
                                   children: [
@@ -1823,6 +2001,7 @@ class WordTestResultPage extends ConsumerWidget {
                                 ),
                               ),
                               const SizedBox(height: 16),
+                              // 選択肢一覧を表示（ActionChip 形式）
                               Text(
                                 "選択肢:",
                                 style: TextStyle(
@@ -1844,6 +2023,7 @@ class WordTestResultPage extends ConsumerWidget {
                                     labelStyle: const TextStyle(
                                         color: Colors.blueAccent),
                                     onPressed: () async {
+                                      // 選択肢をタップすると、その単語の詳細情報をダイアログで表示
                                       final allProducts = await ref
                                           .read(productsProvider.future);
                                       final optionProduct =
@@ -1875,6 +2055,7 @@ class WordTestResultPage extends ConsumerWidget {
                                 }).toList(),
                               ),
                               const SizedBox(height: 16),
+                              // 累計ミス回数を表示（フィードバック用）
                               Consumer(builder: (context, ref, child) {
                                 final mistakeCounts =
                                     ref.watch(mistakeCountsProvider);
@@ -1890,6 +2071,7 @@ class WordTestResultPage extends ConsumerWidget {
                             ],
                           ),
                         ),
+                        // カード右上にチェックボックスを配置して「チェック済み」を設定できる
                         Positioned(
                           top: 8,
                           right: 8,
@@ -1916,7 +2098,7 @@ class WordTestResultPage extends ConsumerWidget {
               ),
             ),
             const SizedBox(height: 5),
-            // ホームへ戻るボタンなど
+            // 下部のボタン群：ホームに戻る／再挑戦ボタン
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -1929,6 +2111,7 @@ class WordTestResultPage extends ConsumerWidget {
                         borderRadius: BorderRadius.circular(30)),
                   ),
                   onPressed: () {
+                    // ホームに戻る（スタックの先頭まで戻る）
                     Navigator.popUntil(context, (route) => route.isFirst);
                   },
                   icon: const Icon(Icons.home),
@@ -1945,17 +2128,14 @@ class WordTestResultPage extends ConsumerWidget {
                         borderRadius: BorderRadius.circular(30)),
                   ),
                   onPressed: () {
-                    // 遷移元に応じて画面を分岐
+                    // テストの再挑戦：チェックボックステストか否かで遷移先を切り替え
                     if (isCheckboxTest) {
-                      // チェックボックス問題から遷移してきたときは、
-                      // 出題数も同じ設定（例：generateQuizQuestionsで指定している件数）にして再度チェックボックス問題へ
                       Navigator.pushReplacement(
                         context,
                         MaterialPageRoute(
                             builder: (_) => const CheckboxTestPage()),
                       );
                     } else {
-                      // 単語テストの場合
                       Navigator.pushReplacement(
                         context,
                         MaterialPageRoute(builder: (_) => const WordTestPage()),
@@ -1975,6 +2155,12 @@ class WordTestResultPage extends ConsumerWidget {
   }
 }
 
+/// ---------------------------------------------------------------------------
+/// CheckedQuestionsPage
+/// ---------------------------------------------------------------------------
+/// ユーザーが「単語チェック問題」として登録した単語の一覧を表示する画面です。
+/// ・リスト上では各単語に対して、タップで詳細ダイアログやスワイプで削除操作が可能です。
+/// ・画面上部には、「問題出題」ボタンがあり、チェックされた単語だけを対象にクイズを開始します。
 class CheckedQuestionsPage extends ConsumerStatefulWidget {
   const CheckedQuestionsPage({super.key});
 
@@ -1982,13 +2168,19 @@ class CheckedQuestionsPage extends ConsumerStatefulWidget {
   CheckedQuestionsPageState createState() => CheckedQuestionsPageState();
 }
 
+/// ---------------------------------------------------------------------------
+/// CheckedQuestionsPageState
+/// ---------------------------------------------------------------------------
+/// CheckedQuestionsPage の内部状態を管理するクラスです。
+/// ・プロバイダーから取得したチェック済み単語に基づき、
+///   リストを表示、削除、並び替え（必要に応じて）の機能を提供します。
 class CheckedQuestionsPageState extends ConsumerState<CheckedQuestionsPage> {
+  // 並び替えモードフラグ（今回は固定モードで false）
   final bool _isSorting = false;
-  List<Product>? _sortedProducts; // 並び替え用の一時リスト
+  List<Product>? _sortedProducts;
 
   @override
   Widget build(BuildContext context) {
-    // チェック済みの単語（問題として登録された単語）のセットを取得
     final checked = ref.watch(checkedQuestionsProvider);
     final productsAsync = ref.watch(productsProvider);
 
@@ -1999,7 +2191,7 @@ class CheckedQuestionsPageState extends ConsumerState<CheckedQuestionsPage> {
       ),
       body: Stack(
         children: [
-          // 上部固定：チェック済みの単語が1件でもある場合のみ「問題出題」ボタンが活性状態となる
+          // 画面上部に「問題出題」ボタンを配置（チェック済み単語がある場合のみアクティブ）
           Positioned(
             top: 16,
             left: 16,
@@ -2011,7 +2203,6 @@ class CheckedQuestionsPageState extends ConsumerState<CheckedQuestionsPage> {
                   borderRadius: BorderRadius.circular(30),
                 ),
               ),
-              // checked.isEmptyならonPressedがnullとなり、非活性状態になる
               onPressed: checked.isNotEmpty
                   ? () {
                       Navigator.push(
@@ -2026,7 +2217,7 @@ class CheckedQuestionsPageState extends ConsumerState<CheckedQuestionsPage> {
                   style: TextStyle(fontSize: context.fontSizeExtraLarge)),
             ),
           ),
-          // 下部：チェック済みの単語リストを表示
+          // チェック済み単語リストの表示部
           Padding(
             padding: EdgeInsets.only(top: context.paddingExtraLarge * 2.5),
             child: Padding(
@@ -2035,7 +2226,6 @@ class CheckedQuestionsPageState extends ConsumerState<CheckedQuestionsPage> {
                 loading: () => const Center(child: CircularProgressIndicator()),
                 error: (error, _) => Center(child: Text("データ読み込みエラー: $error")),
                 data: (products) {
-                  // ここではProductリストから、チェック済み（checkedに含まれる）商品を抽出
                   final filtered =
                       products.where((p) => checked.contains(p.name)).toList();
                   if (filtered.isEmpty) {
@@ -2069,6 +2259,7 @@ class CheckedQuestionsPageState extends ConsumerState<CheckedQuestionsPage> {
                         final product = filtered[index];
                         return SwipeToDeleteCard(
                           keyValue: ValueKey(product.name),
+                          // スワイプで単語を削除する際に確認ダイアログを表示する
                           onConfirm: () async {
                             return await showDialog<bool>(
                                   context: context,
@@ -2121,7 +2312,8 @@ class CheckedQuestionsPageState extends ConsumerState<CheckedQuestionsPage> {
     );
   }
 
-  /// 長押し時に表示するボトムシート
+  /// _showActionSheet()
+  /// 下部モーダルシートで、保存や削除などの操作項目を表示する
   void _showActionSheet(Product product) {
     showModalBottomSheet(
       context: context,
@@ -2159,6 +2351,18 @@ class CheckedQuestionsPageState extends ConsumerState<CheckedQuestionsPage> {
   }
 }
 
+/// ---------------------------------------------------------------------------
+/// CheckboxTestPage
+/// ---------------------------------------------------------------------------
+/// 登録されたチェック対象単語のみを対象としたクイズテスト画面です。
+/// 通常の単語テストと類似していますが、チェックボックスにより選ばれた問題だけを
+/// 抽出してクイズ問題として出題します。
+//////////////////////////////////////////////
+// CheckboxTestPage
+//////////////////////////////////////////////
+// チェックボックスで登録された単語のみを使ったクイズテスト画面です。
+// 通常の単語テストと似ていますが、ユーザーがチェックした単語（チェック済みの問題）だけを
+// クイズ出題の対象とします。
 class CheckboxTestPage extends ConsumerStatefulWidget {
   const CheckboxTestPage({super.key});
 
@@ -2166,24 +2370,32 @@ class CheckboxTestPage extends ConsumerStatefulWidget {
   ConsumerState<CheckboxTestPage> createState() => _CheckboxTestPageState();
 }
 
+//////////////////////////////////////////////
+// _CheckboxTestPageState
+//////////////////////////////////////////////
+// CheckboxTestPage の内部状態を管理し、以下の役割を持ちます：
+// ・チェック済み単語から問題用のクイズリストを生成する（_generateQuiz()）
+// ・ユーザーの各問題への回答を受け付け、正誤判定を行う
+// ・問題番号と全体の進行状況を管理し、回答後、1秒後に次の問題または結果画面へ遷移する
 class _CheckboxTestPageState extends ConsumerState<CheckboxTestPage> {
-  List<WordTestQuestion> quiz = [];
-  int currentQuestionIndex = 0;
+  List<WordTestQuestion> quiz = []; // 出題対象のクイズ問題リスト
+  int currentQuestionIndex = 0; // 現在解答中の問題番号
+  bool _isAnswered = false; // 現在の問題に対して回答済みか否か
 
-  // 追加：各問題の解答処理を一度だけ実行するためのフラグ
-  bool _isAnswered = false;
-
+  /// _generateQuiz()
+  /// チェック済み単語だけを抽出し、そこからランダムに quizCount 問のクイズ問題を作成する。
   void _generateQuiz(List<Product> products, Set<String> checked) {
     final filteredProducts =
         products.where((p) => checked.contains(p.name)).toList();
-    if (filteredProducts.isEmpty) return;
+    if (filteredProducts.isEmpty) return; // チェック済みがなければ何も生成しない
     quiz = generateQuizQuestions(filteredProducts, products, quizCount: 10);
     currentQuestionIndex = 0;
-    _isAnswered = false; // 新しい問題開始時にフラグをリセット
+    _isAnswered = false;
   }
 
   @override
   Widget build(BuildContext context) {
+    // プロバイダーから全単語情報とチェック済み単語リストを取得
     final productsAsync = ref.watch(productsProvider);
     final checked = ref.watch(checkedQuestionsProvider);
     return Scaffold(
@@ -2194,6 +2406,7 @@ class _CheckboxTestPageState extends ConsumerState<CheckboxTestPage> {
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, _) => Center(child: Text("データ読み込みエラー: $error")),
         data: (products) {
+          // クイズ問題が空の場合、チェック済み商品から問題を生成
           if (quiz.isEmpty) _generateQuiz(products, checked);
           if (quiz.isEmpty) {
             return const Center(child: Text("チェックされた問題がありません"));
@@ -2204,18 +2417,22 @@ class _CheckboxTestPageState extends ConsumerState<CheckboxTestPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                // 画面上部に「問題 ○/○」を表示
                 Text(
                   "問題 ${currentQuestionIndex + 1} / ${quiz.length}",
                   style: TextStyle(
-                      fontSize: context.fontSizeExtraLarge,
-                      fontWeight: FontWeight.bold),
+                    fontSize: context.fontSizeExtraLarge,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 const SizedBox(height: 16),
+                // クイズ問題として出題する、単語の説明文を表示
                 Text(
                   "問題：${currentQuestion.product.description}",
                   style: TextStyle(fontSize: context.fontSizeMedium),
                 ),
                 const SizedBox(height: 24),
+                // 回答選択肢をボタン化して横並び（正解の場合は緑、不正解なら赤で表示）
                 ...currentQuestion.options.map((option) {
                   Color? btnColor;
                   if (currentQuestion.userAnswer != null) {
@@ -2237,15 +2454,18 @@ class _CheckboxTestPageState extends ConsumerState<CheckboxTestPage> {
                               // すでに処理済みであれば何もしない
                               if (_isAnswered) return;
                               _isAnswered = true; // 以降のタップをブロック
+
+                              // ユーザーが選択肢をタップした時の処理
                               setState(() {
                                 currentQuestion.userAnswer = option;
                               });
-                              // 不正解の場合は、ここで1回だけミス数を更新
+                              // 不正解の場合、ミス回数をカウントアップ
                               if (!currentQuestion.isCorrect) {
                                 await ref
                                     .read(mistakeCountsProvider.notifier)
                                     .increment(currentQuestion.product.name);
                               }
+                              // 1秒後に次の問題へ遷移。最後なら結果画面へ
                               await Future.delayed(const Duration(seconds: 1));
                               if (currentQuestionIndex < quiz.length - 1) {
                                 setState(() {
@@ -2253,23 +2473,27 @@ class _CheckboxTestPageState extends ConsumerState<CheckboxTestPage> {
                                   _isAnswered = false; // 次の問題開始時にリセット
                                 });
                               } else {
-                                // CheckboxTestPage内での遷移例
                                 Navigator.pushReplacement(
                                   context,
                                   MaterialPageRoute(
                                     builder: (_) => WordTestResultPage(
-                                        quiz: quiz, isCheckboxTest: true),
+                                      quiz: quiz,
+                                      isCheckboxTest: true,
+                                    ),
                                   ),
                                 );
                               }
                             }
                           : null,
-                      child: Text(option,
-                          style: TextStyle(fontSize: context.fontSizeMedium)),
+                      child: Text(
+                        option,
+                        style: TextStyle(fontSize: context.fontSizeMedium),
+                      ),
                     ),
                   );
                 }),
                 const SizedBox(height: 16),
+                // 回答後、正解・不正解のフィードバックメッセージを表示
                 if (currentQuestion.userAnswer != null)
                   Text(
                     currentQuestion.isCorrect
@@ -2292,14 +2516,20 @@ class _CheckboxTestPageState extends ConsumerState<CheckboxTestPage> {
   }
 }
 
+//////////////////////////////////////////////
+// SavedItemsPage
+//////////////////////////////////////////////
+// 保存した単語（お気に入りなど）を一覧表示する画面です。
+// 各商品（ProductCard）のタップ・スワイプ、長押しアクションから詳細ダイアログや
+// カテゴリー割当、単語チェック問題登録などの操作を実行できます。
 class SavedItemsPage extends ConsumerWidget {
   const SavedItemsPage({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // savedItemsProvider から保存済みの単語名リスト、そして productsProvider で全単語情報を取得
     final savedItems = ref.watch(savedItemsProvider);
     final productsAsync = ref.watch(productsProvider);
-
     return Scaffold(
       appBar: AppBar(
         title: const Text('保存単語'),
@@ -2309,7 +2539,7 @@ class SavedItemsPage extends ConsumerWidget {
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, _) => Center(child: Text('データ読み込みエラー: $error')),
         data: (allProducts) {
-          // 保存リストに沿って対象の Product を抽出
+          // 保存済みの商品名リストから Product オブジェクトを抽出
           final savedProducts = savedItems
               .where((name) => allProducts.any((p) => p.name == name))
               .map((name) => allProducts.firstWhere((p) => p.name == name))
@@ -2320,7 +2550,6 @@ class SavedItemsPage extends ConsumerWidget {
             itemBuilder: (context, product) {
               return SwipeToDeleteCard(
                 keyValue: ValueKey(product.name),
-                // 削除前に確認ダイアログを表示
                 onConfirm: () async {
                   return await showDialog<bool>(
                         context: context,
@@ -2341,15 +2570,14 @@ class SavedItemsPage extends ConsumerWidget {
                       ) ??
                       false;
                 },
-                // 削除が確定した際の処理
                 onDismissed: () async {
                   await ref
                       .read(savedItemsProvider.notifier)
                       .removeItem(product.name);
                 },
-                // 子ウィジェットは、タップ時は詳細ダイアログを表示、長押し時に下部シートで追加アクションを表示
                 child: GestureDetector(
                   onLongPress: () {
+                    // 長押し時はカテゴリー割当ウィジェット表示などを実行
                     showModalBottomSheet(
                       context: context,
                       builder: (context) => SafeArea(
@@ -2374,18 +2602,20 @@ class SavedItemsPage extends ConsumerWidget {
                                 final currentChecked =
                                     ref.read(checkedQuestionsProvider);
                                 if (currentChecked.contains(product.name)) {
-                                  ScaffoldMessenger.of(context)
-                                      .showSnackBar(const SnackBar(
-                                    content: Text("既に単語チェック問題に登録されています。"),
-                                  ));
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text("既に単語チェック問題に登録されています。"),
+                                    ),
+                                  );
                                 } else {
                                   ref
                                       .read(checkedQuestionsProvider.notifier)
                                       .add(product.name);
-                                  ScaffoldMessenger.of(context)
-                                      .showSnackBar(const SnackBar(
-                                    content: Text("単語チェック問題に登録しました。"),
-                                  ));
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text("単語チェック問題に登録しました。"),
+                                    ),
+                                  );
                                 }
                                 Navigator.pop(context);
                               },
@@ -2399,8 +2629,9 @@ class SavedItemsPage extends ConsumerWidget {
                     product: product,
                     onTap: () => showProductDialog(context, product),
                     margin: EdgeInsets.symmetric(
-                        vertical: context.paddingExtraSmall,
-                        horizontal: context.paddingExtraSmall),
+                      vertical: context.paddingExtraSmall,
+                      horizontal: context.paddingExtraSmall,
+                    ),
                   ),
                 ),
               );
@@ -2412,25 +2643,27 @@ class SavedItemsPage extends ConsumerWidget {
   }
 }
 
+//////////////////////////////////////////////
+// SavedItemsPageState
+//////////////////////////////////////////////
+// SavedItemsPage の内部状態を管理し、保存単語の並び替えモードを提供します。
+// ユーザーはアイコンをタップして並び替えモードに切り替え、
+// ドラッグ＆ドロップにより保存順を変更できます。
 class SavedItemsPageState extends ConsumerState<SavedItemsPage> {
-  // 並び替えモードのフラグ（初期状態は通常モード）
-  bool _isSorting = false;
+  bool _isSorting = false; // 並び替えモードか否か
 
   @override
   Widget build(BuildContext context) {
     final savedItems = ref.watch(savedItemsProvider);
     final productsAsync = ref.watch(productsProvider);
-
     return Scaffold(
       appBar: AppBar(
         title: const Text('保存単語'),
         centerTitle: true,
         actions: [
-          // 並び替えモード中は「完了（チェックアイコン）」、通常モードでは「並び替え（ソートアイコン）」を表示
           IconButton(
             icon: _isSorting ? const Icon(Icons.check) : const Icon(null),
             onPressed: () {
-              // アイコン押下で並び替えモードのオン／オフを切り替え
               setState(() {
                 _isSorting = !_isSorting;
               });
@@ -2444,24 +2677,19 @@ class SavedItemsPageState extends ConsumerState<SavedItemsPage> {
           loading: () => const Center(child: CircularProgressIndicator()),
           error: (error, _) => Center(child: Text('データ読み込みエラー: $error')),
           data: (products) {
-            // 保存済みリストに沿って対象 Product を抽出
             final savedProducts = savedItems
                 .where((itemName) => products.any((p) => p.name == itemName))
                 .map((itemName) =>
                     products.firstWhere((p) => p.name == itemName))
                 .toList();
-
             if (savedProducts.isEmpty) {
               return const Center(child: Text('保存された単語はありません'));
             }
-
             if (_isSorting) {
-              // ※ 並び替えモード：ReorderableListView を利用
               return ReorderableListView.builder(
                 itemCount: savedProducts.length,
                 onReorder: (oldIndex, newIndex) async {
                   if (newIndex > oldIndex) newIndex--;
-                  // 並び替え後のリスト順を savedItemsProvider に反映
                   List<String> newOrder = List.from(savedItems);
                   final item = newOrder.removeAt(oldIndex);
                   newOrder.insert(newIndex, item);
@@ -2471,21 +2699,16 @@ class SavedItemsPageState extends ConsumerState<SavedItemsPage> {
                 },
                 itemBuilder: (context, index) {
                   final product = savedProducts[index];
-                  // 並び替えモードでは、カード全体は ListTile（もしくは ProductCard の見た目に近いもの）にして、
-                  // 右側のアイコンをドラッグハンドル（二点アイコン）に変更
                   return ListTile(
                     key: ValueKey(product.name),
-                    // ドラッグ可能なアイコン
                     leading: const Icon(Icons.drag_handle),
                     title: Text(product.name),
                     subtitle: Text(product.description),
-                    // タップ時は商品詳細ダイアログを表示。※UIの他の部分はそのまま
                     onTap: () => showProductDialog(context, product),
                   );
                 },
               );
             } else {
-              // ※ 通常モード：元の ListView.builder を利用し、長押しで下部シート表示
               return ListView.builder(
                 itemCount: savedProducts.length,
                 itemBuilder: (context, index) {
@@ -2529,7 +2752,6 @@ class SavedItemsPageState extends ConsumerState<SavedItemsPage> {
                     },
                     child: GestureDetector(
                       onLongPress: () {
-                        // 長押し時に下部シートで各アクションを表示
                         showModalBottomSheet(
                           context: context,
                           builder: (BuildContext context) {
@@ -2541,7 +2763,6 @@ class SavedItemsPageState extends ConsumerState<SavedItemsPage> {
                                     title: const Text("保存する"),
                                     onTap: () {
                                       Navigator.pop(context);
-                                      // 保存するでカテゴリー割当シートを表示
                                       showModalBottomSheet(
                                         context: context,
                                         builder: (context) =>
@@ -2554,21 +2775,17 @@ class SavedItemsPageState extends ConsumerState<SavedItemsPage> {
                                     leading: const Icon(Icons.check_box),
                                     title: const Text("単語チェック問題に登録する"),
                                     onTap: () {
-                                      // チェック問題に既に登録済みか確認
                                       final currentChecked =
                                           ref.read(checkedQuestionsProvider);
                                       if (currentChecked
                                           .contains(product.name)) {
-                                        // 既に存在している場合は状態を変更せずに通知する
                                         ScaffoldMessenger.of(context)
                                             .showSnackBar(
                                           const SnackBar(
-                                            content:
-                                                Text("既に単語チェック問題に登録されています。"),
-                                          ),
+                                              content:
+                                                  Text("既に単語チェック問題に登録されています。")),
                                         );
                                       } else {
-                                        // 未登録の場合のみ追加
                                         ref
                                             .read(checkedQuestionsProvider
                                                 .notifier)
@@ -2576,8 +2793,8 @@ class SavedItemsPageState extends ConsumerState<SavedItemsPage> {
                                         ScaffoldMessenger.of(context)
                                             .showSnackBar(
                                           const SnackBar(
-                                            content: Text("単語チェック問題に登録しました。"),
-                                          ),
+                                              content:
+                                                  Text("単語チェック問題に登録しました。")),
                                         );
                                       }
                                       Navigator.pop(context);
@@ -2588,7 +2805,6 @@ class SavedItemsPageState extends ConsumerState<SavedItemsPage> {
                                     title: const Text("並び替える"),
                                     onTap: () {
                                       Navigator.pop(context);
-                                      // 並び替えモードに切り替え
                                       setState(() {
                                         _isSorting = true;
                                       });
@@ -2628,6 +2844,12 @@ class SavedItemsPageState extends ConsumerState<SavedItemsPage> {
   }
 }
 
+//////////////////////////////////////////////
+// CategorySelectionPage
+//////////////////////////////////////////////
+// 登録済みのカテゴリー一覧を表示する画面です。
+// ユーザーはカテゴリーごとに保存された単語のリストを見るため、
+// 各カテゴリーカードをタップして CategoryItemsPage へ遷移できます。
 class CategorySelectionPage extends ConsumerStatefulWidget {
   const CategorySelectionPage({super.key});
 
@@ -2635,21 +2857,30 @@ class CategorySelectionPage extends ConsumerStatefulWidget {
   CategorySelectionPageState createState() => CategorySelectionPageState();
 }
 
+// ============================================================================
+// CategorySelectionPageState
+// -----------------------------------------------------------------------------
+// この状態クラスは「カテゴリー一覧画面」内で表示するカテゴリーのリストを管理します。
+// ・通常表示モードでは、各カテゴリーをリスト表示し、スワイプで削除や長押しでオプションを起動します。
+// ・並び替えモードでは、ドラッグ＆ドロップでカテゴリーの順序を変更できるようにします。
+// ============================================================================
 class CategorySelectionPageState extends ConsumerState<CategorySelectionPage> {
-  // 並び替えモードかどうかを管理するフラグ
+  /// 並び替えモードかどうかを示すフラグ（trueならドラッグ＆ドロップで順序変更可能）
   bool _isReordering = false;
 
   @override
   Widget build(BuildContext context) {
+    // プロバイダーから現在のカテゴリー一覧を取得
     final categories = ref.watch(categoriesProvider);
-
     Widget listWidget;
+
     if (_isReordering) {
-      // 並び替えモード：ReorderableListView.builder でドラッグ操作可能
+      // 【並び替えモード】：ReorderableListView を利用してドラッグ＆ドロップ操作を可能にする
       listWidget = ReorderableListView.builder(
         padding: EdgeInsets.symmetric(vertical: context.paddingMedium),
         itemCount: categories.length,
         onReorder: (oldIndex, newIndex) async {
+          // ドラッグ操作後、カテゴリーの新しい順序を更新する
           if (newIndex > oldIndex) newIndex--;
           await ref
               .read(categoriesProvider.notifier)
@@ -2666,6 +2897,7 @@ class CategorySelectionPageState extends ConsumerState<CategorySelectionPage> {
             title: Text(cat.name),
             subtitle: Text("登録済み単語数: ${cat.products.length}"),
             onTap: () {
+              // タップすると、該当カテゴリーの詳細（カテゴリーに属する単語一覧）画面へ遷移
               Navigator.push(
                 context,
                 MaterialPageRoute(
@@ -2677,7 +2909,7 @@ class CategorySelectionPageState extends ConsumerState<CategorySelectionPage> {
         },
       );
     } else {
-      // 通常モード：SwipeToDeleteCard 内の ListTile に長押しでオプションを表示
+      // 【通常モード】：ListView でカテゴリー一覧を表示し、各リスト項目にスワイプ／タップ／長押し操作を埋め込む
       listWidget = ListView.builder(
         padding: EdgeInsets.symmetric(vertical: context.paddingMedium),
         itemCount: categories.length,
@@ -2685,7 +2917,7 @@ class CategorySelectionPageState extends ConsumerState<CategorySelectionPage> {
           final cat = categories[index];
           return SwipeToDeleteCard(
             keyValue: ValueKey(cat.name),
-            // スワイプした際の削除確認ダイアログ
+            // スワイプしたときに削除確認ダイアログを表示
             onConfirm: () async {
               return await showDialog<bool>(
                     context: context,
@@ -2706,6 +2938,7 @@ class CategorySelectionPageState extends ConsumerState<CategorySelectionPage> {
                   ) ??
                   false;
             },
+            // スワイプ後にカテゴリーを削除する
             onDismissed: () async {
               await ref
                   .read(categoriesProvider.notifier)
@@ -2716,6 +2949,7 @@ class CategorySelectionPageState extends ConsumerState<CategorySelectionPage> {
               subtitle: Text("登録済み単語数: ${cat.products.length}"),
               trailing: const Icon(Icons.arrow_forward),
               onTap: () {
+                // タップでカテゴリー内の単語一覧へ遷移
                 Navigator.push(
                   context,
                   MaterialPageRoute(
@@ -2723,7 +2957,7 @@ class CategorySelectionPageState extends ConsumerState<CategorySelectionPage> {
                   ),
                 );
               },
-              // 長押しで下部シートを表示（名称変更、削除、並び替え）
+              // 長押しでカテゴリーの操作（リネーム、削除、並び替え）モーダルを表示
               onLongPress: () {
                 _showCategoryOptions(cat);
               },
@@ -2738,7 +2972,7 @@ class CategorySelectionPageState extends ConsumerState<CategorySelectionPage> {
         title: const Text("カテゴリーリスト"),
         centerTitle: true,
         actions: [
-          // 並び替えモード中はチェックアイコンを表示して通常モードに戻す
+          // 並び替えモード中は「完了」ボタンを表示して通常モードへ戻す
           if (_isReordering)
             IconButton(
               icon: const Icon(Icons.check),
@@ -2751,6 +2985,7 @@ class CategorySelectionPageState extends ConsumerState<CategorySelectionPage> {
         ],
       ),
       body: listWidget,
+      // FloatingActionButton：新規カテゴリーを追加するためのダイアログを起動
       floatingActionButton: FloatingActionButton(
         onPressed: () async {
           String? newCat = await showCategoryCreationDialog(context);
@@ -2763,7 +2998,7 @@ class CategorySelectionPageState extends ConsumerState<CategorySelectionPage> {
     );
   }
 
-  /// 長押し時に表示するボトムシート（名称変更・削除・並び替えの各オプション）
+  /// カテゴリー長押し時に表示するオプションメニュー（リネーム／削除／並び替え）の表示処理
   void _showCategoryOptions(Category cat) {
     showModalBottomSheet(
       context: context,
@@ -2771,6 +3006,7 @@ class CategorySelectionPageState extends ConsumerState<CategorySelectionPage> {
         return SafeArea(
           child: Wrap(
             children: [
+              // リネームオプション
               ListTile(
                 leading: const Icon(Icons.edit),
                 title: const Text("リスト名の変更"),
@@ -2779,6 +3015,7 @@ class CategorySelectionPageState extends ConsumerState<CategorySelectionPage> {
                   _showRenameCategoryDialog(cat);
                 },
               ),
+              // カテゴリー削除オプション
               ListTile(
                 leading: const Icon(Icons.delete),
                 title: const Text("リスト削除"),
@@ -2808,6 +3045,7 @@ class CategorySelectionPageState extends ConsumerState<CategorySelectionPage> {
                   }
                 },
               ),
+              // 並び替えモードへの移行オプション
               ListTile(
                 leading: const Icon(Icons.sort),
                 title: const Text("並び替え"),
@@ -2825,7 +3063,7 @@ class CategorySelectionPageState extends ConsumerState<CategorySelectionPage> {
     );
   }
 
-  /// カテゴリー名称変更用ダイアログ
+  /// カテゴリー名の変更用ダイアログを表示し、入力された新しい名前で更新する処理
   void _showRenameCategoryDialog(Category cat) {
     final TextEditingController controller =
         TextEditingController(text: cat.name);
@@ -2862,40 +3100,55 @@ class CategorySelectionPageState extends ConsumerState<CategorySelectionPage> {
   }
 }
 
+// ============================================================================
+// CategoryAssignmentSheet
+// -----------------------------------------------------------------------------
+// CategoryAssignmentSheet は、指定された商品（Product）に対して、
+// ・どのカテゴリーに所属させるか（チェックボックスで複数選択可能）
+// ・「保存済み」にするかどうか
+// の割り当て状態を設定するためのモーダルシートです。
+// ============================================================================
 class CategoryAssignmentSheet extends ConsumerStatefulWidget {
   final Product product;
 
+  /// [product] - カテゴリー割当の対象商品
   const CategoryAssignmentSheet({super.key, required this.product});
 
   @override
   CategoryAssignmentSheetState createState() => CategoryAssignmentSheetState();
 }
 
+// ============================================================================
+// CategoryAssignmentSheetState
+// -----------------------------------------------------------------------------
+// CategoryAssignmentSheetState において、既存のカテゴリー割当情報と
+// 保存状態をローカルに保持し、ユーザーがチェックを変更した結果を反映後、
+// 「完了」ボタンを押すとそれぞれのプロバイダーに更新を通知します。
+// ============================================================================
 class CategoryAssignmentSheetState
     extends ConsumerState<CategoryAssignmentSheet> {
-  // ローカルで各カテゴリーのチェック状態を保持（キーはカテゴリー名）
+  /// 各カテゴリー名と、該当商品がそのカテゴリーに所属しているかの状態（trueなら所属）
   late Map<String, bool> _localAssignments;
 
-  // 「保存した単語一覧」のローカル状態
+  /// 商品が「保存単語」（お気に入り）に登録されているかの状態
   late bool _localSaved;
 
   @override
   void initState() {
     super.initState();
-    // 初期状態として、プロバイダーから現在の状態を取得
-    // ref.read() は initState 内でも使えます
+    // 現在のカテゴリー割当情報をローカル状態として初期化
     final currentCategories = ref.read(categoriesProvider);
     _localAssignments = {
       for (var cat in currentCategories)
         cat.name: cat.products.contains(widget.product.name)
     };
+    // 保存状態についても初期値を設定
     final currentSaved = ref.read(savedItemsProvider);
     _localSaved = currentSaved.contains(widget.product.name);
   }
 
   @override
   Widget build(BuildContext context) {
-    // 再度カテゴリー一覧を取得（変更があった場合に備える）
     final categories = ref.watch(categoriesProvider);
 
     return SafeArea(
@@ -2904,7 +3157,7 @@ class CategoryAssignmentSheetState
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // タイトル行：左にタイトル、右に「＋新規カテゴリーを追加」ボタン
+            // ヘッダ部分：対象商品の名称と「新規カテゴリー追加」ボタン
             Row(
               children: [
                 Expanded(
@@ -2918,14 +3171,14 @@ class CategoryAssignmentSheetState
                 ),
                 TextButton.icon(
                   onPressed: () async {
+                    // 新しいカテゴリーを追加するダイアログを表示
                     final newCat = await showCategoryCreationDialog(context);
                     if (newCat != null && newCat.isNotEmpty) {
-                      // 新規カテゴリーを追加
                       await ref
                           .read(categoriesProvider.notifier)
                           .addCategory(newCat);
-                      // 新規カテゴリー追加後、ローカル状態にも追加（初期は割当無し）
                       setState(() {
+                        // 新規追加したカテゴリーは初期状態で未割当にする
                         _localAssignments[newCat] = false;
                       });
                     }
@@ -2936,7 +3189,7 @@ class CategoryAssignmentSheetState
               ],
             ),
             const Divider(),
-            // 保存した単語一覧チェックボックス（ローカル状態で保持）
+            // 「保存単語」チェックボックス：お気に入り登録のオン／オフ
             CheckboxListTile(
               title: const Text("保存単語"),
               value: _localSaved,
@@ -2947,14 +3200,13 @@ class CategoryAssignmentSheetState
               },
             ),
             const Divider(),
-            // カテゴリーリスト（各カテゴリーのチェック状態もローカル管理）
+            // カテゴリー一覧のチェックボックスリスト：各カテゴリーにこの商品を割り当てるか選択
             Flexible(
               child: ListView.builder(
                 shrinkWrap: true,
                 itemCount: categories.length,
                 itemBuilder: (context, index) {
                   final cat = categories[index];
-                  // ローカル状態に存在しない場合は、初期値としてfalseを設定
                   final assigned = _localAssignments[cat.name] ?? false;
                   return CheckboxListTile(
                     title: Text(cat.name),
@@ -2969,13 +3221,13 @@ class CategoryAssignmentSheetState
               ),
             ),
             const SizedBox(height: 16),
-            // 下部「完了」ボタン：完了ボタンが押されたときにプロバイダーへ更新を反映
+            // 完了ボタン：選択内容をすべて保存し、ダイアログを閉じる
             ElevatedButton(
               style: ElevatedButton.styleFrom(
                 minimumSize: const Size(double.infinity, 48),
               ),
               onPressed: () async {
-                // 各カテゴリーについてローカル状態をもとに更新
+                // 各カテゴリーについて、ローカル状態に応じて商品割当の更新を実行
                 for (var entry in _localAssignments.entries) {
                   await ref
                       .read(categoriesProvider.notifier)
@@ -2985,7 +3237,8 @@ class CategoryAssignmentSheetState
                         entry.value,
                       );
                 }
-                // 保存状態も更新
+
+                // 保存状態についても、該当プロバイダーに反映する
                 if (_localSaved) {
                   await ref
                       .read(savedItemsProvider.notifier)
@@ -3009,28 +3262,22 @@ class CategoryAssignmentSheetState
   }
 }
 
-/// ---------------------
-/// CategoryItemsPage
-/// ---------------------
-///
-// CategoryItemsPageをStatefulWidgetに変更
-class CategoryItemsPage extends ConsumerStatefulWidget {
-  final Category category;
-
-  const CategoryItemsPage({super.key, required this.category});
-
-  @override
-  CategoryItemsPageState createState() => CategoryItemsPageState();
-}
-
+// ============================================================================
+// AddItemToCategoryDialog
+// -----------------------------------------------------------------------------
+// このウィジェットは、「カテゴリ内に新たに単語を追加」するためのダイアログです。
+// ・全単語の中から、既にそのカテゴリに登録されていない商品を対象に自動補完（Autocomplete）で検索
+// ・ユーザーが候補をタップすると、該当カテゴリーに自動で商品が追加されます。
+// ============================================================================
 class AddItemToCategoryDialog extends ConsumerWidget {
   final Category category;
 
+  /// [category] - 商品を追加する対象のカテゴリー情報
   const AddItemToCategoryDialog({super.key, required this.category});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // 全商品一覧から、既にカテゴリーに入っていない商品の名前を抽出
+    // 全単語を取得し、既にカテゴリに含まれていない商品の名前リストを作成
     final allProducts = ref.watch(allProductsProvider);
     final availableOptions = allProducts
         .where((p) => !category.products.contains(p.name))
@@ -3038,9 +3285,9 @@ class AddItemToCategoryDialog extends ConsumerWidget {
         .toList();
 
     return AlertDialog(
-      title: const Text("商品を追加"),
+      title: const Text("単語を追加"),
       content: Autocomplete<String>(
-        // 候補の絞り込み（入力に応じて）
+        // 入力に応じた候補リストを生成
         optionsBuilder: (TextEditingValue textEditingValue) {
           if (textEditingValue.text.trim().isEmpty) {
             return availableOptions;
@@ -3049,11 +3296,13 @@ class AddItemToCategoryDialog extends ConsumerWidget {
               .toLowerCase()
               .contains(textEditingValue.text.toLowerCase()));
         },
-        // ユーザーが候補を選択したタイミング
+        // ユーザーが候補を選択したとき：該当商品のカテゴリ割当を更新しダイアログを閉じる
         onSelected: (String selected) async {
-          await ref
-              .read(categoriesProvider.notifier)
-              .updateProductAssignment(category.name, selected, true);
+          await ref.read(categoriesProvider.notifier).updateProductAssignment(
+                category.name,
+                selected,
+                true,
+              );
           Navigator.of(context).pop();
         },
         fieldViewBuilder: (context, controller, focusNode, onEditingComplete) {
@@ -3061,7 +3310,7 @@ class AddItemToCategoryDialog extends ConsumerWidget {
             controller: controller,
             focusNode: focusNode,
             decoration: const InputDecoration(
-              labelText: "商品を検索",
+              labelText: "単語を検索",
               border: OutlineInputBorder(),
             ),
             onEditingComplete: onEditingComplete,
@@ -3069,6 +3318,7 @@ class AddItemToCategoryDialog extends ConsumerWidget {
         },
       ),
       actions: [
+        // キャンセルボタン：何もせずダイアログを閉じる
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
           child: const Text("キャンセル"),
@@ -3078,6 +3328,14 @@ class AddItemToCategoryDialog extends ConsumerWidget {
   }
 }
 
+// ============================================================================
+// AddProductDialog Widget
+// -----------------------------------------------------------------------------
+// このウィジェットは「新規単語追加」ダイアログを表示します。
+// ユーザーはテキストフィールドに単語（Product）の名前を入力し、
+// 「追加」ボタンを押すことで新たな単語を作成できます。
+// 「キャンセル」ボタンを押すとダイアログを閉じます。
+// ============================================================================
 class AddProductDialog extends StatefulWidget {
   const AddProductDialog({super.key});
 
@@ -3085,11 +3343,22 @@ class AddProductDialog extends StatefulWidget {
   AddProductDialogState createState() => AddProductDialogState();
 }
 
+// ============================================================================
+// AddProductDialogState
+// -----------------------------------------------------------------------------
+// この状態クラスは、AddProductDialog の内部状態を管理します。
+// ・TextEditingController を用いてユーザーの入力を保持
+// ・「追加」ボタンタップ時に、入力が空でなければ新しい Product インスタンスを作成し、
+//   ダイアログを閉じる際にその新規商品を返します。
+// ・リソース解放のため、dispose() メソッドでコントローラーを破棄します。
+// ============================================================================
 class AddProductDialogState extends State<AddProductDialog> {
+  // ユーザーが新規単語（Productの名前）を入力するためのテキストコントローラー
   final TextEditingController _nameController = TextEditingController();
 
   @override
   void dispose() {
+    // 使用済みのコントローラーを破棄してリソースを解放
     _nameController.dispose();
     super.dispose();
   }
@@ -3097,21 +3366,23 @@ class AddProductDialogState extends State<AddProductDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text("新規商品追加"),
+      title: const Text("新規単語追加"),
       content: TextField(
         controller: _nameController,
-        decoration: const InputDecoration(labelText: "商品名"),
+        decoration: const InputDecoration(labelText: "単語"),
       ),
       actions: [
+        // キャンセルボタン：ユーザーの入力内容を破棄してダイアログを閉じる
         TextButton(
           onPressed: () => Navigator.pop(context),
           child: const Text("キャンセル"),
         ),
+        // 追加ボタン：入力された単語が空でなければ新たな Product を作成し、
+// ダイアログ終了時にその商品を返す
         ElevatedButton(
           onPressed: () {
             final name = _nameController.text.trim();
             if (name.isNotEmpty) {
-              // 商品名のみでProductインスタンスを生成（読み仮名、説明は空文字）
               final newProduct = Product(
                 name: name,
                 yomigana: "",
@@ -3128,11 +3399,20 @@ class AddProductDialogState extends State<AddProductDialog> {
   }
 }
 
+// ============================================================================
+// MistakeCountNotifier
+// -----------------------------------------------------------------------------
+// この StateNotifier は、各単語（Product）のミス回数（誤答回数）の累計を
+// Map<String, int> 型で管理します。
+// ・初期化時に SharedPreferences から以前のミスカウントをロードします。
+// ・increment メソッドで指定された単語のミス数を増加させ、その値を保存します。
+// ============================================================================
 class MistakeCountNotifier extends StateNotifier<Map<String, int>> {
   MistakeCountNotifier() : super({}) {
     _loadCounts();
   }
 
+  // SharedPreferences からミス回数の記録をロード
   Future<void> _loadCounts() async {
     final prefs = await SharedPreferences.getInstance();
     final data = prefs.getString('mistake_counts');
@@ -3141,6 +3421,7 @@ class MistakeCountNotifier extends StateNotifier<Map<String, int>> {
     }
   }
 
+  // 指定された単語のミス回数を増加させ、結果を永続化する
   Future<void> increment(String productName) async {
     final current = state[productName] ?? 0;
     state = {...state, productName: current + 1};
@@ -3149,6 +3430,7 @@ class MistakeCountNotifier extends StateNotifier<Map<String, int>> {
   }
 }
 
+// プロバイダー定義：アプリ全体でミス回数の状態を共有するための Provider
 final mistakeCountsProvider =
     StateNotifierProvider<MistakeCountNotifier, Map<String, int>>(
   (ref) => MistakeCountNotifier(),
@@ -3299,117 +3581,30 @@ class WordListPageState extends ConsumerState<WordListPage> {
   }
 }
 
-/// 代表的な勘定科目の選択肢（必要に応じて追加）
-const List<String> accountOptions = [
-  // ＜資産＞
-  "仕入",
-  "現金",
-  "当座預金",
-  "普通預金",
-  "未収入金",
-  "売掛金",
-  "受取手形",
-  "仕掛品",
-  "製品",
-  "材料",
-  "備品",
-  "建物",
-  "建物減価償却累計額",
-  "ソフトウェア",
-  "ソフトウェア償却費",
-  "売買目的有価証券",
-  "有価証券評価損",
-  "有価証券売却益",
-  "満期保有目的債券",
-  "有価証券利息",
-  "繰延税金資産",
+/*
+=====================================================================
+ 仕訳問題と関連クラス・ウィジェット
+---------------------------------------------------------------------
+ このセクションでは、仕訳問題（SortingProblem）とそれに関連する
+ データモデル、プロバイダー、およびクイズ画面用ウィジェット（JournalEntryQuizWidget）
+ や、その中で利用する電卓ウィジェット（CalculatorWidget）について定義しています。
+=====================================================================
+*/
 
-  // ＜負債＞
-  "買掛金",
-  "支払手形",
-  "長期借入金",
-  "未払金",
-  "仮払法人税等",
-  "未払消費税",
-  "未払法人税等",
-  "退職給付引当金",
-  "リース債務",
-  "資産除去債務",
-  "前受金",
-  "未払利息",
-  "貸倒引当金",
-  "貸倒引当金繰入",
-
-  // ＜純資産／資本＞
-  "資本金",
-  "資本準備金",
-  "その他資本剰余金",
-  "非支配株主持分",
-  "新株予約権",
-
-  // ＜収益＞
-  "売上",
-  "仮受消費税",
-  "受取利息",
-  "為替差益",
-  "投資有価証券売却益",
-  "役務収益",
-  "クレジット売掛金",
-
-  // ＜費用＞
-  "給料",
-  "所得税預り金",
-  "社会保険料預り金",
-  "支払家賃",
-  "広告宣伝費",
-  "仮払金",
-  "旅費交通費",
-  "支払保険料",
-  "退職給付費用",
-  "貸倒損失",
-  "減価償却費",
-  "減損損失",
-  "修繕費",
-  "株式報酬費用",
-  "社債発行費",
-  "固定資産売却損",
-  "国庫補助金受贈益",
-  "保険差益",
-  "手形売却損",
-  "仕入割引",
-  "売上割引",
-  "仕損品",
-  "異常仕損損失",
-  "雑収入",
-  "材料受入価格差異",
-  "材料費数量差異",
-  "労務費賃率差異",
-  "労務費時間差異",
-  "製造間接費",
-  "製造間接費予算差異",
-  "製造間接費能率差異",
-  "製造間接費操業度差異",
-  "製造間接費配賦差異",
-  "売上原価",
-  "賃金",
-  "未払賃金",
-  "預り金",
-  "固定製造間接費",
-  "固定販売費及び一般管理費",
-
-  // ＜その他＞
-  "建設仮勘定",
-  "為替予約",
-  "デリバティブ評価益",
-  "電子記録債権",
-  "電子記録債権売却損",
-  "電子記録債務",
-];
-
-/// 各仕訳の正解エントリーを表す
+// ============================================================================
+// JournalEntry
+// -----------------------------------------------------------------------------
+// JournalEntry クラスは、1 件の仕訳エントリーを表現します。
+// ・side: 「借方」または「貸方」など仕訳の側面を示す文字列
+// ・account: 対象となる勘定科目名
+// ・amount: 仕訳の金額（整数）
+//
+// また、JSON の Map から JournalEntry インスタンスを生成するファクトリ
+// コンストラクタも実装しています。
+// ============================================================================
 class JournalEntry {
-  final String side; // 「借方」または「貸方」
-  final String account; // 勘定科目
+  final String side; // 仕訳の側面（例: "借方"、"貸方"）
+  final String account; // 対象の勘定科目
   final int amount; // 金額
 
   JournalEntry({
@@ -3418,6 +3613,7 @@ class JournalEntry {
     required this.amount,
   });
 
+  // JSON 形式の Map から JournalEntry インスタンスへ変換
   factory JournalEntry.fromJson(Map<String, dynamic> json) {
     return JournalEntry(
       side: json['side'] as String,
@@ -3427,14 +3623,26 @@ class JournalEntry {
   }
 }
 
-/// 仕訳問題（取引）のデータモデル
+// ============================================================================
+// SortingProblem
+// -----------------------------------------------------------------------------
+// SortingProblem クラスは、仕訳問題の 1 件を表現します。
+// ・id: 問題の識別子
+// ・transactionDate: 仕訳伝票の日付（文字列）
+// ・description: 仕訳伝票の説明（問題文）
+// ・entries: この問題に対する正解の仕訳エントリー（JournalEntry のリスト）
+// ・feedback: 解説（テキスト）
+// ・bookkeepingType: 関連する簿記の種別
+//
+// JSON から SortingProblem インスタンスを生成するファクトリも提供します。
+// ============================================================================
 class SortingProblem {
   final String id;
   final String transactionDate;
   final String description;
   final List<JournalEntry> entries;
   final String feedback;
-  final String bookkeepingType; // 新たに追加
+  final String bookkeepingType;
 
   SortingProblem({
     required this.id,
@@ -3445,6 +3653,7 @@ class SortingProblem {
     required this.bookkeepingType,
   });
 
+  // JSON の Map から SortingProblem インスタンスへ変換
   factory SortingProblem.fromJson(Map<String, dynamic> json) {
     final entriesJson = json['entries'] as List;
     return SortingProblem(
@@ -3453,12 +3662,17 @@ class SortingProblem {
       description: json['description'] as String,
       entries: entriesJson.map((e) => JournalEntry.fromJson(e)).toList(),
       feedback: json['feedback'] as String,
-      bookkeepingType: json['bookkeepingType'] as String, // ここで読み込む
+      bookkeepingType: json['bookkeepingType'] as String,
     );
   }
 }
 
-/// JSONファイル（assets/siwake.json）から仕訳問題リストを読み込むProvider
+// ============================================================================
+// sortingProblemsProvider
+// -----------------------------------------------------------------------------
+// この FutureProvider は、assets/siwake.json から仕訳問題のリストを非同期
+// で読み込み、SortingProblem インスタンスのリストとして返します。
+// ============================================================================
 final sortingProblemsProvider =
     FutureProvider<List<SortingProblem>>((ref) async {
   final data = await rootBundle.loadString('assets/siwake.json');
@@ -3466,12 +3680,17 @@ final sortingProblemsProvider =
   return jsonResult.map((json) => SortingProblem.fromJson(json)).toList();
 });
 
-/// ─────────────────────────────────────────────
-/// ユーザーが問題に解答するウィジェット【左右レイアウト：左→借方、右→貸方】
-/// ─────────────────────────────────────────────
+// ============================================================================
+// JournalEntryQuizWidget
+// -----------------------------------------------------------------------------
+// JournalEntryQuizWidget は、仕訳問題のクイズ画面として使用されるウィジェットです。
+// ・SortingProblem を受け取り、ユーザーに対して正解の仕訳エントリー（借方／貸方）の
+//   入力を求めます。
+// ・onSubmitted コールバックにより、正解か否かの結果を親ウィジェットに通知します。
+// ============================================================================
 class JournalEntryQuizWidget extends StatefulWidget {
   final SortingProblem problem;
-  final Function(bool) onSubmitted; // 正誤結果のコールバック
+  final Function(bool) onSubmitted; // クイズ回答が提出された際に正誤結果を通知
 
   const JournalEntryQuizWidget({
     super.key,
@@ -3483,39 +3702,58 @@ class JournalEntryQuizWidget extends StatefulWidget {
   State<JournalEntryQuizWidget> createState() => _JournalEntryQuizWidgetState();
 }
 
+// ============================================================================
+// _JournalEntryQuizWidgetState
+// -----------------------------------------------------------------------------
+// _JournalEntryQuizWidgetState では、JournalEntryQuizWidget の内部状態を管理します。
+// ・問題文に応じた借方・貸方の正解エントリー（debitAnswers, creditAnswers）を抽出
+// ・ユーザーが入力する各勘定科目と金額の状態を個別に管理（userDebitAccounts, debitAmountControllers 等）
+// ・submitAnswer メソッドで、ユーザーの入力内容と正解リストを比較し、正誤判定を行います。
+// ・また、各入力ウィジェット（_buildDebitEntry, _buildCreditEntry）を構築します。
+// ============================================================================
 class _JournalEntryQuizWidgetState extends State<JournalEntryQuizWidget> {
-  // 正解の仕訳を「借方」と「貸方」に分割
+  // 正解の借方・貸方エントリー
   late final List<JournalEntry> debitAnswers;
   late final List<JournalEntry> creditAnswers;
 
-  // すべてのエントリーから共通の勘定科目リストを作成
+  // 問題内で共通して利用できる勘定科目の候補リスト
   late final List<String> commonAccountOptions;
 
-  // ユーザー入力（借方）
+  // ユーザーが入力する借方エントリーの各項目（勘定科目）管理
   late List<String?> userDebitAccounts;
+
+  // 借方エントリーの金額入力用テキストコントローラー
   late List<TextEditingController> debitAmountControllers;
 
-  // ユーザー入力（貸方）
+  // ユーザーが入力する貸方エントリーの各項目（勘定科目）管理
   late List<String?> userCreditAccounts;
+
+  // 貸方エントリーの金額入力用テキストコントローラー
   late List<TextEditingController> creditAmountControllers;
 
+  // 回答の正誤状態（null:未回答、true:正解、false:不正解）
   bool? isAnswerCorrect;
 
   @override
   void initState() {
     super.initState();
+    // 問題文から「借方」エントリーと「貸方」エントリーを抽出
     debitAnswers =
         widget.problem.entries.where((entry) => entry.side == "借方").toList();
     creditAnswers =
         widget.problem.entries.where((entry) => entry.side == "貸方").toList();
-    // 借方・貸方共通の勘定科目リスト（重複除外）
+
+    // 問題に含まれる全勘定科目の候補（重複を除く）
     commonAccountOptions =
         widget.problem.entries.map((e) => e.account).toSet().toList();
 
+    // ユーザーへの初期入力（nullで初期化）
     userDebitAccounts = List.filled(debitAnswers.length, null);
+    // 借方の金額入力コントローラーを生成
     debitAmountControllers =
         List.generate(debitAnswers.length, (_) => TextEditingController());
 
+    // 貸方の入力も同様に初期化
     userCreditAccounts = List.filled(creditAnswers.length, null);
     creditAmountControllers =
         List.generate(creditAnswers.length, (_) => TextEditingController());
@@ -3523,6 +3761,7 @@ class _JournalEntryQuizWidgetState extends State<JournalEntryQuizWidget> {
 
   @override
   void dispose() {
+    // 各コントローラーを破棄してリソースを解放
     for (var ctrl in debitAmountControllers) {
       ctrl.dispose();
     }
@@ -3532,8 +3771,15 @@ class _JournalEntryQuizWidgetState extends State<JournalEntryQuizWidget> {
     super.dispose();
   }
 
+  // ========================================================================
+  // submitAnswer
+  // ------------------------------------------------------------------------
+  // ユーザーの入力内容が全て入力されているかチェック後、
+  // 入力された借方・貸方それぞれのリストと正解リストを比較し正誤判定を行います。
+  // 正誤判定結果は、親ウィジェットの onSubmitted コールバックで通知します。
+  // ========================================================================
   void submitAnswer() {
-    // 入力漏れチェック（借方）
+    // 借方の各エントリーが入力済みかどうかチェック
     for (int i = 0; i < userDebitAccounts.length; i++) {
       if (userDebitAccounts[i] == null ||
           debitAmountControllers[i].text.trim().isEmpty) {
@@ -3543,7 +3789,8 @@ class _JournalEntryQuizWidgetState extends State<JournalEntryQuizWidget> {
         return;
       }
     }
-    // 入力漏れチェック（貸方）
+
+    // 貸方の各エントリーについてもチェック
     for (int i = 0; i < userCreditAccounts.length; i++) {
       if (userCreditAccounts[i] == null ||
           creditAmountControllers[i].text.trim().isEmpty) {
@@ -3554,9 +3801,9 @@ class _JournalEntryQuizWidgetState extends State<JournalEntryQuizWidget> {
       }
     }
 
+    // ユーザーが入力した借方エントリーのリストに変換（勘定科目＋金額）
     List<Map<String, dynamic>> userDebitList = [];
     for (int i = 0; i < userDebitAccounts.length; i++) {
-      // 金額入力フィールドのテキストからカンマを取り除く
       int? amount = int.tryParse(
         debitAmountControllers[i].text.trim().replaceAll(',', ''),
       );
@@ -3572,6 +3819,7 @@ class _JournalEntryQuizWidgetState extends State<JournalEntryQuizWidget> {
       });
     }
 
+    // ユーザーが入力した貸方エントリーのリストに変換
     List<Map<String, dynamic>> userCreditList = [];
     for (int i = 0; i < userCreditAccounts.length; i++) {
       int? amount = int.tryParse(
@@ -3589,6 +3837,7 @@ class _JournalEntryQuizWidgetState extends State<JournalEntryQuizWidget> {
       });
     }
 
+    // 正解の借方・貸方リストも Map の形に変換
     List<Map<String, dynamic>> correctDebitList = debitAnswers
         .map((entry) => {
               'account': entry.account,
@@ -3602,15 +3851,24 @@ class _JournalEntryQuizWidgetState extends State<JournalEntryQuizWidget> {
             })
         .toList();
 
+    // 借方と貸方それぞれの正誤判定
     bool debitCorrect = _isListEqual(userDebitList, correctDebitList);
     bool creditCorrect = _isListEqual(userCreditList, correctCreditList);
 
+    // 両方正解であれば最終的な正誤結果は true
     setState(() {
       isAnswerCorrect = debitCorrect && creditCorrect;
     });
+    // 親ウィジェットに結果を通知
     widget.onSubmitted(isAnswerCorrect!);
   }
 
+  // ========================================================================
+  // _isListEqual
+  // ------------------------------------------------------------------------
+  // 2 つの Map のリストが同一内容かどうかを比較します。
+  // 順序は問いませんが、各要素（勘定科目と金額の組）が同じであれば true を返します。
+  // ========================================================================
   bool _isListEqual(
       List<Map<String, dynamic>> list1, List<Map<String, dynamic>> list2) {
     if (list1.length != list2.length) return false;
@@ -3625,8 +3883,15 @@ class _JournalEntryQuizWidgetState extends State<JournalEntryQuizWidget> {
       }
     }
     return temp.isEmpty;
-  } // 左側（借方エントリー）のウィジェット
+  }
 
+  // ========================================================================
+  // _buildDebitEntry
+  // ------------------------------------------------------------------------
+  // 指定された index の借方入力項目のウィジェットを構築します。
+  // ・DropdownButtonFormField: 勘定科目の選択
+  // ・TextField: 金額の入力（カンマ区切りに自動フォーマット）
+// ========================================================================
   Widget _buildDebitEntry(int index) {
     return Container(
       margin: EdgeInsets.symmetric(vertical: context.paddingMedium),
@@ -3639,7 +3904,6 @@ class _JournalEntryQuizWidgetState extends State<JournalEntryQuizWidget> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ここで勘定科目の DropdownButtonFormField のコードは変わらず
           DropdownButtonFormField<String>(
             decoration: InputDecoration(
               labelText: "勘定科目",
@@ -3652,6 +3916,7 @@ class _JournalEntryQuizWidgetState extends State<JournalEntryQuizWidget> {
             ),
             value: userDebitAccounts[index],
             isExpanded: true,
+            // ユーザーが選択可能な勘定科目一覧（共通候補リスト）
             items: commonAccountOptions
                 .map((account) => DropdownMenuItem(
                       value: account,
@@ -3673,7 +3938,6 @@ class _JournalEntryQuizWidgetState extends State<JournalEntryQuizWidget> {
             },
           ),
           const SizedBox(height: 6),
-          // 金額入力フィールドに電卓アイコンを追加
           TextField(
             controller: debitAmountControllers[index],
             decoration: InputDecoration(
@@ -3684,17 +3948,16 @@ class _JournalEntryQuizWidgetState extends State<JournalEntryQuizWidget> {
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
               ),
+              // 計算結果を入力するための電卓アイコン
               suffixIcon: IconButton(
                 icon: const Icon(Icons.calculate),
                 onPressed: () async {
-                  // 現在入力されている内容（カンマを除去して数値に変換）
                   double initialValue = double.tryParse(
                           debitAmountControllers[index]
                               .text
                               .replaceAll(',', '')
                               .trim()) ??
                       0;
-                  // 電卓ウィジェットをモーダルボトムシートで表示
                   final result = await showModalBottomSheet<double>(
                     context: context,
                     isScrollControlled: true,
@@ -3702,7 +3965,6 @@ class _JournalEntryQuizWidgetState extends State<JournalEntryQuizWidget> {
                         CalculatorWidget(initialValue: initialValue),
                   );
                   if (result != null) {
-                    // 結果をカンマ区切りでフォーマットしてフィールドに反映
                     debitAmountControllers[index].text =
                         NumberFormat('#,###').format(result);
                   }
@@ -3717,7 +3979,12 @@ class _JournalEntryQuizWidgetState extends State<JournalEntryQuizWidget> {
     );
   }
 
-// 右側（貸方エントリー）のウィジェット
+  // ========================================================================
+  // _buildCreditEntry
+  // ------------------------------------------------------------------------
+  // 指定された index の貸方入力項目のウィジェットを構築します。
+// 借方と同様に、勘定科目の選択と金額の入力フィールドから構成されます。
+// ========================================================================
   Widget _buildCreditEntry(int index) {
     return Container(
       margin: EdgeInsets.symmetric(vertical: context.paddingMedium),
@@ -3763,7 +4030,6 @@ class _JournalEntryQuizWidgetState extends State<JournalEntryQuizWidget> {
             },
           ),
           const SizedBox(height: 6),
-          // 貸方金額入力フィールドに Calculator を実装
           TextField(
             controller: creditAmountControllers[index],
             decoration: InputDecoration(
@@ -3777,14 +4043,12 @@ class _JournalEntryQuizWidgetState extends State<JournalEntryQuizWidget> {
               suffixIcon: IconButton(
                 icon: const Icon(Icons.calculate),
                 onPressed: () async {
-                  // 入力中のテキストからカンマを除去して数値に変換
                   double initialValue = double.tryParse(
                           creditAmountControllers[index]
                               .text
                               .replaceAll(',', '')
                               .trim()) ??
                       0;
-                  // CalculatorWidget をモーダルボトムシートとして表示
                   final result = await showModalBottomSheet<double>(
                     context: context,
                     isScrollControlled: true,
@@ -3792,7 +4056,6 @@ class _JournalEntryQuizWidgetState extends State<JournalEntryQuizWidget> {
                         CalculatorWidget(initialValue: initialValue),
                   );
                   if (result != null) {
-                    // 結果をカンマ付きでフォーマットしてテキストフィールドに反映
                     creditAmountControllers[index].text =
                         NumberFormat('#,###').format(result);
                   }
@@ -3831,6 +4094,7 @@ class _JournalEntryQuizWidgetState extends State<JournalEntryQuizWidget> {
                           fontSize: context.fontSizeMedium,
                           fontWeight: FontWeight.bold)),
                   const Divider(thickness: 2),
+                  // 借方入力フィールド群の生成
                   Column(
                     children: List.generate(debitAnswers.length,
                         (index) => _buildDebitEntry(index)),
@@ -3848,6 +4112,7 @@ class _JournalEntryQuizWidgetState extends State<JournalEntryQuizWidget> {
                           fontSize: context.fontSizeMedium,
                           fontWeight: FontWeight.bold)),
                   const Divider(thickness: 2),
+                  // 貸方入力フィールド群の生成
                   Column(
                     children: List.generate(creditAnswers.length,
                         (index) => _buildCreditEntry(index)),
@@ -3858,6 +4123,7 @@ class _JournalEntryQuizWidgetState extends State<JournalEntryQuizWidget> {
           ],
         ),
         const SizedBox(height: 20),
+        // 回答結果表示（正誤のフィードバックと正解仕訳、解説）
         if (isAnswerCorrect != null)
           Container(
             width: double.infinity,
@@ -3900,7 +4166,6 @@ class _JournalEntryQuizWidgetState extends State<JournalEntryQuizWidget> {
         ElevatedButton(
           onPressed: isAnswerCorrect == null
               ? () {
-                  // キーボードを閉じる
                   FocusScope.of(context).unfocus();
                   submitAnswer();
                 }
@@ -3923,15 +4188,32 @@ class _JournalEntryQuizWidgetState extends State<JournalEntryQuizWidget> {
   }
 }
 
+// ============================================================================
+// CalculatorWidget
+// -----------------------------------------------------------------------------
+// CalculatorWidget は、計算機能を提供するモーダルウィジェットです。
+// ユーザーはこのウィジェット上で数式入力や数値計算を行い、結果を確定ボタンで
+// 呼び出し元へ返します。
+// ============================================================================
+
 class CalculatorWidget extends StatefulWidget {
-  /// CalculatorWidget の初期値は常に 0 からスタート
-  final double initialValue;
+  final double initialValue; // 電卓起動時の初期値
 
   const CalculatorWidget({super.key, this.initialValue = 0});
 
   @override
   CalculatorWidgetState createState() => CalculatorWidgetState();
 }
+
+// ============================================================================
+// CalculatorWidgetState
+// -----------------------------------------------------------------------------
+// この状態クラスは、CalculatorWidget の内部状態を管理します。
+// ・display: 現在の入力内容または計算結果の文字列を保持
+// ・_onPressed: 各ボタンタップ時のロジックを実装（クリア、削除、符号反転、計算など）
+// ・_buildButton: 各計算ボタンウィジェットを構築します。
+// ・build: グリッドレイアウトで計算機の各キーと、確定ボタンを表示します。
+// ============================================================================
 
 class CalculatorWidgetState extends State<CalculatorWidget> {
   String display = '0';
@@ -3942,7 +4224,7 @@ class CalculatorWidgetState extends State<CalculatorWidget> {
     display = '0';
   }
 
-  /// 数式の評価結果をフォーマットするヘルパー
+  // 数値が整数なら整数として、そうでなければ小数点以下も含め文字列としてフォーマット
   String formatResult(double result) {
     if (result == result.toInt()) {
       return result.toInt().toString();
@@ -3951,7 +4233,13 @@ class CalculatorWidgetState extends State<CalculatorWidget> {
     }
   }
 
-  /// キー押下の処理
+  // ========================================================================
+  // _onPressed
+  // ------------------------------------------------------------------------
+  // 各キー（"C", "DEL", "±", "=", 数字・演算子）の入力に応じて、
+  // display の状態を更新します。例として、クリアなら "0" にリセットし、
+  // 削除キーなら末尾の文字を削除、= キーなら評価を行います。
+  // ========================================================================
   void _onPressed(String key) {
     setState(() {
       if (key == "C") {
@@ -3973,13 +4261,12 @@ class CalculatorWidgetState extends State<CalculatorWidget> {
           Expression exp = p.parse(display);
           ContextModel cm = ContextModel();
           double result = exp.evaluate(EvaluationType.REAL, cm);
-          // 整数なら小数点以下を省略
           display = formatResult(result);
         } catch (e) {
           display = "Error";
         }
       } else {
-        // もし display が "0" または "Error" の場合、数字または小数点入力なら上書き
+        // 初期状態 "0" またはエラー時の入力は、上書きする
         if ((display == "0" || display == "Error") &&
             "0123456789.".contains(key)) {
           display = key;
@@ -3990,7 +4277,12 @@ class CalculatorWidgetState extends State<CalculatorWidget> {
     });
   }
 
-  /// キー用のボタンウィジェット
+  // ========================================================================
+  // _buildButton
+  // ------------------------------------------------------------------------
+  // 指定されたラベル文字列を持つ計算機のキーを作成するためのヘルパーメソッドです。
+  // キーが空文字なら空の Container を返します（レイアウト調整のため）。
+  // ========================================================================
   Widget _buildButton(String label) {
     if (label.isEmpty) return Container();
     return ElevatedButton(
@@ -4004,7 +4296,7 @@ class CalculatorWidgetState extends State<CalculatorWidget> {
 
   @override
   Widget build(BuildContext context) {
-    // 5行×4列のキーリスト（最後のキーは空文字にして余白として利用）
+    // 計算機上に表示するキーの文字列リスト
     final List<String> keys = [
       "C",
       "±",
@@ -4030,10 +4322,10 @@ class CalculatorWidgetState extends State<CalculatorWidget> {
 
     return Container(
       padding: EdgeInsets.all(context.paddingMedium),
-      height: 500, // ModalBottomSheetに合わせた高さ（調整可能）
+      height: 500,
       child: Column(
         children: [
-          // 入力結果表示部
+          // 計算結果または入力数式を表示する領域
           Container(
             padding: EdgeInsets.all(context.paddingMedium),
             alignment: Alignment.centerRight,
@@ -4043,7 +4335,7 @@ class CalculatorWidgetState extends State<CalculatorWidget> {
             ),
           ),
           const Divider(),
-          // キーパッド部分：4列グリッド
+          // キーを 4 カラムのグリッド表示で配置
           Expanded(
             child: GridView.count(
               crossAxisCount: 4,
@@ -4054,7 +4346,7 @@ class CalculatorWidgetState extends State<CalculatorWidget> {
             ),
           ),
           const SizedBox(height: 8),
-          // 「確定」ボタン：このボタンを押すと現在の計算結果が呼び出し元に返される
+          // 下部の「確定」ボタンを押すと、計算結果を呼び出し元へ返す
           ElevatedButton(
             onPressed: () {
               double result = 0;
@@ -4066,9 +4358,7 @@ class CalculatorWidgetState extends State<CalculatorWidget> {
               } catch (e) {
                 result = 0;
               }
-              // 結果のフォーマット
               String formatted = formatResult(result);
-              // 呼び出し元に返す
               Navigator.pop(context, double.tryParse(formatted) ?? 0);
             },
             style: ElevatedButton.styleFrom(
@@ -4083,22 +4373,23 @@ class CalculatorWidgetState extends State<CalculatorWidget> {
       ),
     );
   }
-}
+} ///////////////////////////////////////////////////////////////
 
+// CommonProductListView
+///////////////////////////////////////////////////////////////
+/// [CommonProductListView] は、Product のリスト表示を共通化するためのウィジェットです。
+/// ユーザーの入力によるリフレッシュ機能（onRefresh）や、ドラッグ＆ドロップによる
+/// アイテム順序変更（isReorderable / onReorder）もサポートします。
+///
+/// ・products: 表示対象となる Product のリスト
+/// ・itemBuilder: 各 Product を表示するためのウィジェットを構築する関数
+/// ・onRefresh: 引っ張って更新する際のコールバック（任意）
+/// ・isReorderable: 並び替え可能なリストとする場合は true、必ず onReorder コールバックが必要
 class CommonProductListView extends StatelessWidget {
-  /// 表示する商品のリスト
   final List<Product> products;
-
-  /// 各アイテムのウィジェットを生成するためのビルダー
   final Widget Function(BuildContext context, Product product) itemBuilder;
-
-  /// プル・トゥ・リフレッシュ処理（オプション）
   final Future<void> Function()? onRefresh;
-
-  /// 並び替え可能な表示にする際のフラグ
   final bool isReorderable;
-
-  /// 並び替え時のコールバック（trueの場合は必須）
   final void Function(int oldIndex, int newIndex)? onReorder;
 
   const CommonProductListView({
@@ -4109,11 +4400,10 @@ class CommonProductListView extends StatelessWidget {
     this.isReorderable = false,
     this.onReorder,
   }) : assert(!isReorderable || onReorder != null,
-            'Reorderableの場合、onReorderは必須です');
+            'Reorderable の場合、onReorder コールバックは必須です。');
 
   @override
   Widget build(BuildContext context) {
-    // 並び替えが有効であればReorderableListViewを利用
     Widget list;
     if (isReorderable) {
       list = ReorderableListView.builder(
@@ -4121,7 +4411,6 @@ class CommonProductListView extends StatelessWidget {
         onReorder: onReorder!,
         itemBuilder: (context, index) {
           final product = products[index];
-          // ReorderableListViewでは各アイテムにKeyが必要
           return Container(
             key: ValueKey(product.name),
             child: itemBuilder(context, product),
@@ -4136,8 +4425,7 @@ class CommonProductListView extends StatelessWidget {
         },
       );
     }
-
-    // RefreshIndicatorが設定されていればラップして返す
+    // onRefresh が設定されている場合、RefreshIndicator でラップする
     if (onRefresh != null) {
       return RefreshIndicator(
         onRefresh: onRefresh!,
@@ -4148,6 +4436,12 @@ class CommonProductListView extends StatelessWidget {
   }
 }
 
+///////////////////////////////////////////////////////////////
+// WordSearchPage
+///////////////////////////////////////////////////////////////
+/// [WordSearchPage] は、ユーザーが単語名や読みで Product を検索できる画面です。
+/// ・検索テキストフィールドに入力されたクエリにより、対象の Product をフィルターして表示します。
+/// ・入力がない場合は、ランダムに選ばれた数件の単語をキャッシュして表示する仕組みになっています。
 class WordSearchPage extends ConsumerWidget {
   const WordSearchPage({super.key});
 
@@ -4165,18 +4459,13 @@ class WordSearchPage extends ConsumerWidget {
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, _) => Center(child: Text('データ読み込みエラー: $error')),
         data: (products) {
-          // 検索クエリが空ならランダム表示、入力があればフィルター表示
           final filteredProducts = (searchQuery.isNotEmpty)
-              ? products
-                  .where((p) =>
-                      p.name
-                          .toLowerCase()
-                          .contains(searchQuery.toLowerCase()) ||
-                      p.yomigana
-                          .toLowerCase()
-                          .contains(searchQuery.toLowerCase()))
-                  .toList()
-              : products; // 例として全件表示
+              ? products.where((p) {
+                  final query = searchQuery.toLowerCase();
+                  return p.name.toLowerCase().contains(query) ||
+                      p.yomigana.toLowerCase().contains(query);
+                }).toList()
+              : products;
 
           return CommonProductListView(
             products: filteredProducts,
@@ -4203,12 +4492,18 @@ class WordSearchPage extends ConsumerWidget {
   }
 }
 
-/// 設定画面：FutureBuilderで初回設定値を読み込んでからフォームウィジェットに渡す
+///////////////////////////////////////////////////////////////
+// SettingsPage
+///////////////////////////////////////////////////////////////
+/// [SettingsPage] は、ユーザーのアプリ設定（ここでは勉強開始時間の有効／無効及び時間設定）を管理する画面です。
+/// ・SwitchListTile で勉強開始時間の有効／無効を切り替え、
+///   有効な場合はリスト項目として時間の設定も行えます。
 class SettingsPage extends ConsumerWidget {
   const SettingsPage({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // studySettingsProvider から現在の設定状態を取得
     final studySettings = ref.watch(studySettingsProvider);
 
     return Scaffold(
@@ -4217,6 +4512,7 @@ class SettingsPage extends ConsumerWidget {
       ),
       body: ListView(
         children: [
+          // スイッチで勉強開始時間設定の有効／無効を切り替える
           SwitchListTile(
             title: const Text("勉強開始時間を有効にする"),
             value: studySettings.enableStudyStartTime,
@@ -4226,13 +4522,13 @@ class SettingsPage extends ConsumerWidget {
                   .setEnableStudyStartTime(value);
             },
           ),
+          // 有効な場合のみ、時間設定項目を表示
           if (studySettings.enableStudyStartTime)
             ListTile(
               title: const Text("勉強開始時間"),
               subtitle: Text(studySettings.studyStartTime),
               trailing: const Icon(Icons.access_time),
               onTap: () async {
-                // 現在設定されている時刻を TimeOfDay に変換
                 final parts = studySettings.studyStartTime.split(":");
                 TimeOfDay initialTime = TimeOfDay(
                   hour: int.parse(parts[0]),
@@ -4243,7 +4539,6 @@ class SettingsPage extends ConsumerWidget {
                   initialTime: initialTime,
                 );
                 if (chosenTime != null) {
-                  // 時刻を "HH:mm" 形式にフォーマット
                   final formatted =
                       "${chosenTime.hour.toString().padLeft(2, '0')}:${chosenTime.minute.toString().padLeft(2, '0')}";
                   ref
@@ -4252,17 +4547,21 @@ class SettingsPage extends ConsumerWidget {
                 }
               },
             ),
-          // 他の設定項目があればここに追加・・・
         ],
       ),
     );
   }
 }
 
-// 勉強開始時間設定用のモデル
+///////////////////////////////////////////////////////////////
+// StudySettings Data Model
+///////////////////////////////////////////////////////////////
+/// [StudySettings] は、勉強設定に関するデータモデルです。
+/// ・enableStudyStartTime: 勉強開始時間を有効にするかどうかのフラグ
+/// ・studyStartTime: 実際の勉強開始時間（例 "08:00"）を文字列で保持
 class StudySettings {
   final bool enableStudyStartTime;
-  final String studyStartTime; // "HH:mm" 形式
+  final String studyStartTime;
 
   StudySettings({
     required this.enableStudyStartTime,
@@ -4270,7 +4569,12 @@ class StudySettings {
   });
 }
 
-// StateNotifier を使って状態管理（SharedPreferences への保存も実施）
+///////////////////////////////////////////////////////////////
+// StudySettingsNotifier
+///////////////////////////////////////////////////////////////
+/// [StudySettingsNotifier] は、[StudySettings] の状態管理を行う StateNotifier です。
+/// ・SharedPreferences から初期設定を読み込み、
+/// ・setEnableStudyStartTime, setStudyStartTime で設定変更と永続化を行います。
 class StudySettingsNotifier extends StateNotifier<StudySettings> {
   StudySettingsNotifier()
       : super(StudySettings(
@@ -4278,6 +4582,7 @@ class StudySettingsNotifier extends StateNotifier<StudySettings> {
     _loadSettings();
   }
 
+  // SharedPreferences から保存済みの設定値を読み込み、state を更新
   Future<void> _loadSettings() async {
     final prefs = await SharedPreferences.getInstance();
     bool enabled = prefs.getBool('study_enableStartTime') ?? false;
@@ -4286,6 +4591,7 @@ class StudySettingsNotifier extends StateNotifier<StudySettings> {
         StudySettings(enableStudyStartTime: enabled, studyStartTime: startTime);
   }
 
+  // 勉強開始時間の有効/無効の設定を更新し、SharedPreferences へ永続化する
   Future<void> setEnableStudyStartTime(bool value) async {
     state = StudySettings(
         enableStudyStartTime: value, studyStartTime: state.studyStartTime);
@@ -4293,6 +4599,7 @@ class StudySettingsNotifier extends StateNotifier<StudySettings> {
     await prefs.setBool('study_enableStartTime', value);
   }
 
+  // 勉強開始時間を更新し、SharedPreferences へ永続化する
   Future<void> setStudyStartTime(String time) async {
     state = StudySettings(
         enableStudyStartTime: state.enableStudyStartTime, studyStartTime: time);
@@ -4301,7 +4608,11 @@ class StudySettingsNotifier extends StateNotifier<StudySettings> {
   }
 }
 
-// Riverpod 用のプロバイダー
+///////////////////////////////////////////////////////////////
+// studySettingsProvider
+///////////////////////////////////////////////////////////////
+/// [studySettingsProvider] は、StudySettingsNotifier を通じて
+/// アプリ全体で勉強設定の状態を共有するためのプロバイダーです。
 final studySettingsProvider =
     StateNotifierProvider<StudySettingsNotifier, StudySettings>(
         (ref) => StudySettingsNotifier());
