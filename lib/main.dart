@@ -214,7 +214,10 @@ void showProductDialog(BuildContext context, Product product) {
                 child: const Text("メモを書く"),
               ),
               TextButton(
-                onPressed: () => Navigator.pop(context),
+                onPressed: () {
+                  Navigator.pop(context);
+                  FocusScope.of(context).unfocus();
+                },
                 child: const Text("閉じる"),
               ),
             ],
@@ -999,8 +1002,15 @@ class CategoryItemsPageState extends ConsumerState<CategoryItemsPage> {
         return ListTile(
           key: ValueKey(product.name),
           leading: const Icon(Icons.drag_handle),
-          title: Text(product.name),
-          subtitle: Text(product.description),
+          // 並び替え状態ではsubtitleを表示せず、nameのみ表示
+          title: Text(
+            product.name,
+            style: TextStyle(
+              fontSize: context.fontSizeMedium,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          // Google Play Console のようなシンプルなデザインにするため、余分な情報は削除
           onTap: () => showProductDialog(context, product),
         );
       },
@@ -1161,7 +1171,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
     super.dispose();
   }
 
-  // 長押し時に表示するアクションシート
+  // 長押し時に表示するアクションシート（既存処理）
   void _showActionSheet(Product product) {
     showModalBottomSheet(
       context: context,
@@ -1169,7 +1179,6 @@ class _SearchPageState extends ConsumerState<SearchPage> {
         return SafeArea(
           child: Wrap(
             children: <Widget>[
-              // 「保存する」：カテゴリー割当ウィジェットを表示
               ListTile(
                 leading: const Icon(Icons.bookmark),
                 title: const Text("保存する"),
@@ -1182,7 +1191,6 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                   );
                 },
               ),
-              // 「チェック問題に登録する」：既に登録済みなら通知、未登録なら追加
               ListTile(
                 leading: const Icon(Icons.check_box),
                 title: const Text("単語チェック問題に登録する"),
@@ -1219,323 +1227,338 @@ class _SearchPageState extends ConsumerState<SearchPage> {
     final searchQuery = ref.watch(searchQueryProvider);
     final productsAsync = ref.watch(productsProvider);
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('単語検索'),
-        centerTitle: true,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.menu),
-            tooltip: 'メニュー',
-            onPressed: () {
-              showModalBottomSheet(
-                context: context,
-                backgroundColor: Colors.transparent,
-                builder: (context) {
-                  return Container(
-                    margin: EdgeInsets.all(context.paddingMedium),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).cardColor,
-                      borderRadius: BorderRadius.circular(16),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.2),
-                          blurRadius: 10,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Padding(
-                          padding: EdgeInsets.all(context.paddingSmall),
-                          child: Text(
-                            "メニュー",
-                            style: TextStyle(
-                                fontSize: context.fontSizeLarge,
-                                fontWeight: FontWeight.bold),
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () {
+        FocusScope.of(context).unfocus();
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('単語検索'),
+          centerTitle: true,
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.menu),
+              tooltip: 'メニュー',
+              onPressed: () {
+                FocusScope.of(context).unfocus();
+                showModalBottomSheet(
+                  context: context,
+                  backgroundColor: Colors.transparent,
+                  builder: (context) {
+                    return Container(
+                      margin: EdgeInsets.all(context.paddingMedium),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).cardColor,
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.2),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
                           ),
-                        ),
-                        const Divider(height: 1),
-                        // 既存項目
-                        InkWell(
-                          onTap: () {
-                            Navigator.pop(context);
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (_) => const SavedItemsPage()),
-                            );
-                          },
-                          child: Container(
-                            padding: EdgeInsets.symmetric(
-                                vertical: context.paddingMedium,
-                                horizontal: context.paddingSmall),
-                            child: Row(
-                              children: [
-                                const Icon(Icons.bookmark, color: Colors.blue),
-                                context.horizontalSpaceSmall,
-                                Expanded(
-                                    child: Text("保存単語",
-                                        style: TextStyle(
-                                            fontSize: context.fontSizeMedium))),
-                              ],
+                        ],
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Padding(
+                            padding: EdgeInsets.all(context.paddingSmall),
+                            child: Text(
+                              "メニュー",
+                              style: TextStyle(
+                                  fontSize: context.fontSizeLarge,
+                                  fontWeight: FontWeight.bold),
                             ),
                           ),
-                        ),
-                        const Divider(height: 1),
-                        InkWell(
-                          onTap: () {
-                            Navigator.pop(context);
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (_) =>
-                                      const CategorySelectionPage()),
-                            );
-                          },
-                          child: Container(
-                            padding: EdgeInsets.symmetric(
-                                vertical: context.paddingMedium,
-                                horizontal: context.paddingSmall),
-                            child: Row(
-                              children: [
-                                const Icon(Icons.folder, color: Colors.blue),
-                                context.horizontalSpaceMedium,
-                                Expanded(
-                                    child: Text("カテゴリーリスト",
-                                        style: TextStyle(
-                                            fontSize: context.fontSizeMedium))),
-                              ],
+                          const Divider(height: 1),
+                          // 既存項目
+                          InkWell(
+                            onTap: () {
+                              Navigator.pop(context);
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (_) => const SavedItemsPage()),
+                              );
+                            },
+                            child: Container(
+                              padding: EdgeInsets.symmetric(
+                                  vertical: context.paddingMedium,
+                                  horizontal: context.paddingSmall),
+                              child: Row(
+                                children: [
+                                  const Icon(Icons.bookmark,
+                                      color: Colors.blue),
+                                  context.horizontalSpaceSmall,
+                                  Expanded(
+                                      child: Text("保存単語",
+                                          style: TextStyle(
+                                              fontSize:
+                                                  context.fontSizeMedium))),
+                                ],
+                              ),
                             ),
                           ),
-                        ),
-                        const Divider(height: 1),
-                        InkWell(
-                          onTap: () {
-                            Navigator.pop(context);
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (_) => const WordTestPage()),
-                            );
-                          },
-                          child: Container(
-                            padding: EdgeInsets.symmetric(
-                                vertical: context.paddingMedium,
-                                horizontal: context.paddingSmall),
-                            child: Row(
-                              children: [
-                                const Icon(Icons.quiz, color: Colors.blue),
-                                context.horizontalSpaceMedium,
-                                Expanded(
-                                    child: Text("単語テスト",
-                                        style: TextStyle(
-                                            fontSize: context.fontSizeMedium))),
-                              ],
+                          const Divider(height: 1),
+                          InkWell(
+                            onTap: () {
+                              Navigator.pop(context);
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (_) =>
+                                        const CategorySelectionPage()),
+                              );
+                            },
+                            child: Container(
+                              padding: EdgeInsets.symmetric(
+                                  vertical: context.paddingMedium,
+                                  horizontal: context.paddingSmall),
+                              child: Row(
+                                children: [
+                                  const Icon(Icons.folder, color: Colors.blue),
+                                  context.horizontalSpaceMedium,
+                                  Expanded(
+                                      child: Text("カテゴリーリスト",
+                                          style: TextStyle(
+                                              fontSize:
+                                                  context.fontSizeMedium))),
+                                ],
+                              ),
                             ),
                           ),
-                        ),
-                        const Divider(height: 1),
-                        InkWell(
-                          onTap: () {
-                            Navigator.pop(context);
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (_) => const CheckedQuestionsPage()),
-                            );
-                          },
-                          child: Container(
-                            padding: EdgeInsets.symmetric(
-                                vertical: context.paddingMedium,
-                                horizontal: context.paddingSmall),
-                            child: Row(
-                              children: [
-                                const Icon(Icons.check_box, color: Colors.blue),
-                                context.horizontalSpaceMedium,
-                                Expanded(
-                                    child: Text("単語チェック問題",
-                                        style: TextStyle(
-                                            fontSize: context.fontSizeMedium))),
-                              ],
+                          const Divider(height: 1),
+                          InkWell(
+                            onTap: () {
+                              Navigator.pop(context);
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (_) => const WordTestPage()),
+                              );
+                            },
+                            child: Container(
+                              padding: EdgeInsets.symmetric(
+                                  vertical: context.paddingMedium,
+                                  horizontal: context.paddingSmall),
+                              child: Row(
+                                children: [
+                                  const Icon(Icons.quiz, color: Colors.blue),
+                                  context.horizontalSpaceMedium,
+                                  Expanded(
+                                      child: Text("単語テスト",
+                                          style: TextStyle(
+                                              fontSize:
+                                                  context.fontSizeMedium))),
+                                ],
+                              ),
                             ),
                           ),
-                        ),
-                        const Divider(height: 1),
+                          const Divider(height: 1),
+                          InkWell(
+                            onTap: () {
+                              Navigator.pop(context);
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (_) =>
+                                        const CheckedQuestionsPage()),
+                              );
+                            },
+                            child: Container(
+                              padding: EdgeInsets.symmetric(
+                                  vertical: context.paddingMedium,
+                                  horizontal: context.paddingSmall),
+                              child: Row(
+                                children: [
+                                  const Icon(Icons.check_box,
+                                      color: Colors.blue),
+                                  context.horizontalSpaceMedium,
+                                  Expanded(
+                                      child: Text("単語チェック問題",
+                                          style: TextStyle(
+                                              fontSize:
+                                                  context.fontSizeMedium))),
+                                ],
+                              ),
+                            ),
+                          ),
+                          const Divider(height: 1),
 
-                        // ★ 新規追加：設定項目
-                        // 例：SearchPageのメニュー表示部分（既存項目の後ろに追加）
-                        InkWell(
-                          onTap: () {
-                            Navigator.pop(context);
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (_) => const SettingsPage()),
-                            );
-                          },
-                          child: Container(
-                            padding: EdgeInsets.symmetric(
-                                vertical: context.paddingMedium,
-                                horizontal: context.paddingSmall),
-                            child: Row(
-                              children: [
-                                const Icon(Icons.settings, color: Colors.blue),
-                                const SizedBox(width: 16),
-                                Expanded(
-                                  child: Text("設定",
-                                      style: TextStyle(
-                                          fontSize: context.fontSizeMedium)),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                        const Divider(height: 1),
-                        InkWell(
-                          onTap: () {
-                            Navigator.pop(context);
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (_) => const WordListPage()),
-                            );
-                          },
-                          child: Container(
-                            padding: EdgeInsets.symmetric(
-                                vertical: context.paddingMedium,
-                                horizontal: context.paddingSmall),
-                            child: Row(
-                              children: [
-                                const Icon(Icons.list, color: Colors.blue),
-                                context.horizontalSpaceMedium,
-                                Expanded(
-                                    child: Text("単語一覧",
+                          // ★ 新規追加：設定項目
+                          // 例：SearchPageのメニュー表示部分（既存項目の後ろに追加）
+                          InkWell(
+                            onTap: () {
+                              Navigator.pop(context);
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (_) => const SettingsPage()),
+                              );
+                            },
+                            child: Container(
+                              padding: EdgeInsets.symmetric(
+                                  vertical: context.paddingMedium,
+                                  horizontal: context.paddingSmall),
+                              child: Row(
+                                children: [
+                                  const Icon(Icons.settings,
+                                      color: Colors.blue),
+                                  const SizedBox(width: 16),
+                                  Expanded(
+                                    child: Text("設定",
                                         style: TextStyle(
-                                            fontSize: context.fontSizeMedium))),
-                              ],
+                                            fontSize: context.fontSizeMedium)),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
-                        ),
-                      ],
-                    ),
-                  );
-                },
-              );
-            },
-          ),
-        ],
-      ),
-      body: RefreshIndicator(
-        onRefresh: _onRefresh,
-        child: ListView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          children: [
-            // 検索入力フィールド
-            Padding(
-              padding: EdgeInsets.all(context.paddingMedium),
-              child: TextField(
-                controller: _controller,
-                decoration: const InputDecoration(
-                  labelText: '単語名を入力',
-                  prefixIcon: Icon(Icons.search),
-                ),
-                onChanged: (value) {
-                  if (value.isNotEmpty) {
-                    _cachedRandomProducts = null;
-                  }
-                  ref.read(searchQueryProvider.notifier).state = value;
-                },
-              ),
+                          const Divider(height: 1),
+                          InkWell(
+                            onTap: () {
+                              Navigator.pop(context);
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (_) => const WordListPage()),
+                              );
+                            },
+                            child: Container(
+                              padding: EdgeInsets.symmetric(
+                                  vertical: context.paddingMedium,
+                                  horizontal: context.paddingSmall),
+                              child: Row(
+                                children: [
+                                  const Icon(Icons.list, color: Colors.blue),
+                                  context.horizontalSpaceMedium,
+                                  Expanded(
+                                      child: Text("単語一覧",
+                                          style: TextStyle(
+                                              fontSize:
+                                                  context.fontSizeMedium))),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                );
+              },
             ),
-            // 単語リスト部分
-            productsAsync.when(
-              loading: () => Padding(
-                padding: EdgeInsets.symmetric(vertical: context.paddingMedium),
-                child: const Center(child: CircularProgressIndicator()),
+          ],
+        ),
+        body: RefreshIndicator(
+          onRefresh: _onRefresh,
+          child: ListView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            children: [
+              // 検索入力フィールド
+              Padding(
+                padding: EdgeInsets.all(context.paddingMedium),
+                child: TextField(
+                  controller: _controller,
+                  decoration: const InputDecoration(
+                    labelText: '単語名を入力',
+                    prefixIcon: Icon(Icons.search),
+                  ),
+                  onChanged: (value) {
+                    if (value.isNotEmpty) {
+                      _cachedRandomProducts = null;
+                    }
+                    ref.read(searchQueryProvider.notifier).state = value;
+                  },
+                ),
               ),
-              error: (error, _) => Center(child: Text('データ読み込みエラー: $error')),
-              data: (products) {
-                List<Product> filteredProducts;
-                if (searchQuery.isNotEmpty) {
-                  filteredProducts = products.where((p) {
-                    final query = searchQuery.toLowerCase();
-                    return p.name.toLowerCase().contains(query) ||
-                        p.yomigana.toLowerCase().contains(query);
-                  }).toList();
-                } else {
-                  _cachedRandomProducts ??= () {
-                    final randomizedProducts = List<Product>.from(products);
-                    randomizedProducts.shuffle();
-                    return randomizedProducts.take(15).toList();
-                  }();
-                  filteredProducts = _cachedRandomProducts!;
-                }
+              // 単語リスト部分（既存処理）
+              productsAsync.when(
+                loading: () => Padding(
+                  padding:
+                      EdgeInsets.symmetric(vertical: context.paddingMedium),
+                  child: const Center(child: CircularProgressIndicator()),
+                ),
+                error: (error, _) => Center(child: Text('データ読み込みエラー: $error')),
+                data: (products) {
+                  List<Product> filteredProducts;
+                  if (searchQuery.isNotEmpty) {
+                    filteredProducts = products.where((p) {
+                      final query = searchQuery.toLowerCase();
+                      return p.name.toLowerCase().contains(query) ||
+                          p.yomigana.toLowerCase().contains(query);
+                    }).toList();
+                  } else {
+                    _cachedRandomProducts ??= () {
+                      final randomizedProducts = List<Product>.from(products);
+                      randomizedProducts.shuffle();
+                      return randomizedProducts.take(15).toList();
+                    }();
+                    filteredProducts = _cachedRandomProducts!;
+                  }
 
-                if (filteredProducts.isEmpty) {
-                  return Padding(
-                    padding:
-                        EdgeInsets.symmetric(vertical: context.paddingMedium),
-                    child: const Center(child: Text('一致する単語がありません')),
-                  );
-                }
+                  if (filteredProducts.isEmpty) {
+                    return Padding(
+                      padding:
+                          EdgeInsets.symmetric(vertical: context.paddingMedium),
+                      child: const Center(child: Text('一致する単語がありません')),
+                    );
+                  }
 
-                if (_isSorting) {
-                  // 並び替えモード：初回は現在のフィルタ結果から一時リストを生成
-                  _sortedProducts ??= List<Product>.from(filteredProducts);
-                  return SizedBox(
-                    height: filteredProducts.length * 80, // 適宜リスト高さを調整
-                    child: ReorderableListView.builder(
-                      itemCount: _sortedProducts!.length,
-                      onReorder: (oldIndex, newIndex) {
-                        setState(() {
-                          if (newIndex > oldIndex) newIndex--;
-                          final product = _sortedProducts!.removeAt(oldIndex);
-                          _sortedProducts!.insert(newIndex, product);
-                        });
-                      },
-                      itemBuilder: (context, index) {
-                        final product = _sortedProducts![index];
+                  if (_isSorting) {
+                    _sortedProducts ??= List<Product>.from(filteredProducts);
+                    return SizedBox(
+                      height: filteredProducts.length * 80,
+                      child: ReorderableListView.builder(
+                        itemCount: _sortedProducts!.length,
+                        onReorder: (oldIndex, newIndex) {
+                          setState(() {
+                            if (newIndex > oldIndex) newIndex--;
+                            final product = _sortedProducts!.removeAt(oldIndex);
+                            _sortedProducts!.insert(newIndex, product);
+                          });
+                        },
+                        itemBuilder: (context, index) {
+                          final product = _sortedProducts![index];
+                          return GestureDetector(
+                            key: ValueKey(product.name),
+                            onLongPress: () {
+                              _showActionSheet(product);
+                            },
+                            child: ProductCard(
+                              product: product,
+                              margin: EdgeInsets.symmetric(
+                                  vertical: context.paddingMedium,
+                                  horizontal: context.paddingMedium),
+                              onTap: () => showProductDialog(context, product),
+                            ),
+                          );
+                        },
+                      ),
+                    );
+                  } else {
+                    return Column(
+                      children: filteredProducts.map((product) {
                         return GestureDetector(
-                          key: ValueKey(product.name),
                           onLongPress: () {
                             _showActionSheet(product);
                           },
                           child: ProductCard(
                             product: product,
                             margin: EdgeInsets.symmetric(
-                                vertical: context.paddingMedium,
-                                horizontal: context.paddingMedium),
+                                vertical: context.paddingExtraSmall,
+                                horizontal: context.paddingSmall),
                             onTap: () => showProductDialog(context, product),
                           ),
                         );
-                      },
-                    ),
-                  );
-                } else {
-                  // 通常モード：各項目をGestureDetectorでラップして長押しアクションを実装
-                  return Column(
-                    children: filteredProducts.map((product) {
-                      return GestureDetector(
-                        onLongPress: () {
-                          _showActionSheet(product);
-                        },
-                        child: ProductCard(
-                          product: product,
-                          margin: EdgeInsets.symmetric(
-                              vertical: context.paddingExtraSmall,
-                              horizontal: context.paddingSmall),
-                          onTap: () => showProductDialog(context, product),
-                        ),
-                      );
-                    }).toList(),
-                  );
-                }
-              },
-            ),
-          ],
+                      }).toList(),
+                    );
+                  }
+                },
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -1751,8 +1774,8 @@ class WordTestResultPage extends ConsumerWidget {
                                     horizontal: context.paddingMedium),
                                 decoration: BoxDecoration(
                                   color: question.isCorrect
-                                      ? Colors.green.withOpacity(0.2)
-                                      : Colors.red.withOpacity(0.2),
+                                      ? Colors.green.withValues(alpha: 0.2)
+                                      : Colors.red.withValues(alpha: 0.2),
                                   borderRadius: BorderRadius.circular(10),
                                 ),
                                 child: Text(
@@ -1816,8 +1839,8 @@ class WordTestResultPage extends ConsumerWidget {
                                     label: Text(option,
                                         style: TextStyle(
                                             fontSize: context.fontSizeMedium)),
-                                    backgroundColor:
-                                        Colors.blueAccent.withOpacity(0.1),
+                                    backgroundColor: Colors.blueAccent
+                                        .withValues(alpha: 0.1),
                                     labelStyle: const TextStyle(
                                         color: Colors.blueAccent),
                                     onPressed: () async {
@@ -2613,6 +2636,7 @@ class CategorySelectionPage extends ConsumerStatefulWidget {
 }
 
 class CategorySelectionPageState extends ConsumerState<CategorySelectionPage> {
+  // 並び替えモードかどうかを管理するフラグ
   bool _isReordering = false;
 
   @override
@@ -2621,7 +2645,7 @@ class CategorySelectionPageState extends ConsumerState<CategorySelectionPage> {
 
     Widget listWidget;
     if (_isReordering) {
-      // 並び替えモード：ReorderableListView.builder を利用
+      // 並び替えモード：ReorderableListView.builder でドラッグ操作可能
       listWidget = ReorderableListView.builder(
         padding: EdgeInsets.symmetric(vertical: context.paddingMedium),
         itemCount: categories.length,
@@ -2636,24 +2660,24 @@ class CategorySelectionPageState extends ConsumerState<CategorySelectionPage> {
           return ListTile(
             key: ValueKey(cat.name),
             leading: ReorderableDragStartListener(
-              // ここで index を正しく渡す
               index: index,
               child: const Icon(Icons.drag_handle),
             ),
             title: Text(cat.name),
             subtitle: Text("登録済み単語数: ${cat.products.length}"),
             onTap: () {
-              // CategoryItemsPageへ遷移
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                    builder: (_) => CategoryItemsPage(category: cat)),
+                  builder: (_) => CategoryItemsPage(category: cat),
+                ),
               );
             },
           );
         },
       );
     } else {
+      // 通常モード：SwipeToDeleteCard 内の ListTile に長押しでオプションを表示
       listWidget = ListView.builder(
         padding: EdgeInsets.symmetric(vertical: context.paddingMedium),
         itemCount: categories.length,
@@ -2661,7 +2685,7 @@ class CategorySelectionPageState extends ConsumerState<CategorySelectionPage> {
           final cat = categories[index];
           return SwipeToDeleteCard(
             keyValue: ValueKey(cat.name),
-            // 削除前に確認ダイアログを表示
+            // スワイプした際の削除確認ダイアログ
             onConfirm: () async {
               return await showDialog<bool>(
                     context: context,
@@ -2682,7 +2706,6 @@ class CategorySelectionPageState extends ConsumerState<CategorySelectionPage> {
                   ) ??
                   false;
             },
-            // カテゴリー削除処理（categoriesProvider内のdeleteCategoryを呼ぶ）
             onDismissed: () async {
               await ref
                   .read(categoriesProvider.notifier)
@@ -2696,8 +2719,13 @@ class CategorySelectionPageState extends ConsumerState<CategorySelectionPage> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                      builder: (_) => CategoryItemsPage(category: cat)),
+                    builder: (_) => CategoryItemsPage(category: cat),
+                  ),
                 );
+              },
+              // 長押しで下部シートを表示（名称変更、削除、並び替え）
+              onLongPress: () {
+                _showCategoryOptions(cat);
               },
             ),
           );
@@ -2710,7 +2738,7 @@ class CategorySelectionPageState extends ConsumerState<CategorySelectionPage> {
         title: const Text("カテゴリーリスト"),
         centerTitle: true,
         actions: [
-          // 並び替えモードの場合、完了ボタンを表示して通常モードに戻す
+          // 並び替えモード中はチェックアイコンを表示して通常モードに戻す
           if (_isReordering)
             IconButton(
               icon: const Icon(Icons.check),
@@ -2732,6 +2760,104 @@ class CategorySelectionPageState extends ConsumerState<CategorySelectionPage> {
         },
         child: const Icon(Icons.add),
       ),
+    );
+  }
+
+  /// 長押し時に表示するボトムシート（名称変更・削除・並び替えの各オプション）
+  void _showCategoryOptions(Category cat) {
+    showModalBottomSheet(
+      context: context,
+      builder: (BuildContext context) {
+        return SafeArea(
+          child: Wrap(
+            children: [
+              ListTile(
+                leading: const Icon(Icons.edit),
+                title: const Text("リスト名の変更"),
+                onTap: () {
+                  Navigator.pop(context);
+                  _showRenameCategoryDialog(cat);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.delete),
+                title: const Text("リスト削除"),
+                onTap: () async {
+                  Navigator.pop(context);
+                  bool? confirm = await showDialog<bool>(
+                    context: context,
+                    builder: (context) => AlertDialog(
+                      title: const Text("リスト削除"),
+                      content: Text("カテゴリー『${cat.name}』を削除してよろしいですか？"),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context, false),
+                          child: const Text("キャンセル"),
+                        ),
+                        ElevatedButton(
+                          onPressed: () => Navigator.pop(context, true),
+                          child: const Text("削除"),
+                        ),
+                      ],
+                    ),
+                  );
+                  if (confirm == true) {
+                    await ref
+                        .read(categoriesProvider.notifier)
+                        .deleteCategory(cat.name);
+                  }
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.sort),
+                title: const Text("並び替え"),
+                onTap: () {
+                  Navigator.pop(context);
+                  setState(() {
+                    _isReordering = true;
+                  });
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  /// カテゴリー名称変更用ダイアログ
+  void _showRenameCategoryDialog(Category cat) {
+    final TextEditingController controller =
+        TextEditingController(text: cat.name);
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text("リスト名の変更"),
+          content: TextField(
+            controller: controller,
+            decoration: const InputDecoration(hintText: "新しいリスト名"),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("キャンセル"),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                String newName = controller.text.trim();
+                if (newName.isNotEmpty && newName != cat.name) {
+                  await ref
+                      .read(categoriesProvider.notifier)
+                      .updateCategory(cat.name, newName);
+                }
+                Navigator.pop(context);
+              },
+              child: const Text("変更"),
+            ),
+          ],
+        );
+      },
     );
   }
 }
@@ -4095,7 +4221,9 @@ class SettingsPage extends ConsumerWidget {
             title: const Text("勉強開始時間を有効にする"),
             value: studySettings.enableStudyStartTime,
             onChanged: (value) {
-              ref.read(studySettingsProvider.notifier).setEnableStudyStartTime(value);
+              ref
+                  .read(studySettingsProvider.notifier)
+                  .setEnableStudyStartTime(value);
             },
           ),
           if (studySettings.enableStudyStartTime)
@@ -4116,8 +4244,11 @@ class SettingsPage extends ConsumerWidget {
                 );
                 if (chosenTime != null) {
                   // 時刻を "HH:mm" 形式にフォーマット
-                  final formatted = "${chosenTime.hour.toString().padLeft(2, '0')}:${chosenTime.minute.toString().padLeft(2, '0')}";
-                  ref.read(studySettingsProvider.notifier).setStudyStartTime(formatted);
+                  final formatted =
+                      "${chosenTime.hour.toString().padLeft(2, '0')}:${chosenTime.minute.toString().padLeft(2, '0')}";
+                  ref
+                      .read(studySettingsProvider.notifier)
+                      .setStudyStartTime(formatted);
                 }
               },
             ),
@@ -4127,7 +4258,6 @@ class SettingsPage extends ConsumerWidget {
     );
   }
 }
-
 
 // 勉強開始時間設定用のモデル
 class StudySettings {
@@ -4143,7 +4273,8 @@ class StudySettings {
 // StateNotifier を使って状態管理（SharedPreferences への保存も実施）
 class StudySettingsNotifier extends StateNotifier<StudySettings> {
   StudySettingsNotifier()
-      : super(StudySettings(enableStudyStartTime: false, studyStartTime: "08:00")) {
+      : super(StudySettings(
+            enableStudyStartTime: false, studyStartTime: "08:00")) {
     _loadSettings();
   }
 
@@ -4151,17 +4282,20 @@ class StudySettingsNotifier extends StateNotifier<StudySettings> {
     final prefs = await SharedPreferences.getInstance();
     bool enabled = prefs.getBool('study_enableStartTime') ?? false;
     String startTime = prefs.getString('study_startTime') ?? "08:00";
-    state = StudySettings(enableStudyStartTime: enabled, studyStartTime: startTime);
+    state =
+        StudySettings(enableStudyStartTime: enabled, studyStartTime: startTime);
   }
 
   Future<void> setEnableStudyStartTime(bool value) async {
-    state = StudySettings(enableStudyStartTime: value, studyStartTime: state.studyStartTime);
+    state = StudySettings(
+        enableStudyStartTime: value, studyStartTime: state.studyStartTime);
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('study_enableStartTime', value);
   }
 
   Future<void> setStudyStartTime(String time) async {
-    state = StudySettings(enableStudyStartTime: state.enableStudyStartTime, studyStartTime: time);
+    state = StudySettings(
+        enableStudyStartTime: state.enableStudyStartTime, studyStartTime: time);
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('study_startTime', time);
   }
@@ -4169,5 +4303,5 @@ class StudySettingsNotifier extends StateNotifier<StudySettings> {
 
 // Riverpod 用のプロバイダー
 final studySettingsProvider =
-StateNotifierProvider<StudySettingsNotifier, StudySettings>(
+    StateNotifierProvider<StudySettingsNotifier, StudySettings>(
         (ref) => StudySettingsNotifier());
