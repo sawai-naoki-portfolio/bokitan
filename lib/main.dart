@@ -12,6 +12,81 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
 import 'package:math_expressions/math_expressions.dart';
 
+/// テーマの状態を管理する StateNotifier とプロバイダー
+final themeProvider = StateNotifierProvider<ThemeNotifier, ThemeMode>(
+  (ref) => ThemeNotifier(),
+);
+
+class ThemeNotifier extends StateNotifier<ThemeMode> {
+  ThemeNotifier() : super(ThemeMode.light) {
+    _loadTheme();
+  }
+
+  // SharedPreferencesから "theme_mode" キーで保存されたテーマを読み込む
+  Future<void> _loadTheme() async {
+    final prefs = await SharedPreferences.getInstance();
+    final themeStr = prefs.getString("theme_mode") ?? "light";
+    if (themeStr == "system") {
+      state = ThemeMode.system;
+    } else if (themeStr == "dark") {
+      state = ThemeMode.dark;
+    } else {
+      state = ThemeMode.light;
+    }
+  }
+
+  // テーマ変更時に SharedPreferences へ保存も行う
+  Future<void> setTheme(ThemeMode mode) async {
+    state = mode;
+    final prefs = await SharedPreferences.getInstance();
+    // シンプルに文字列として保存します（"light", "dark", "system"）
+    String modeStr;
+    if (mode == ThemeMode.system) {
+      modeStr = "system";
+    } else if (mode == ThemeMode.dark) {
+      modeStr = "dark";
+    } else {
+      modeStr = "light";
+    }
+    await prefs.setString("theme_mode", modeStr);
+  }
+
+  // 現在の状態が light なら dark に、そうでなければ light に切り替える
+  // （system 状態の場合は light に切り替えます）
+  Future<void> toggleTheme() async {
+    if (state == ThemeMode.light) {
+      await setTheme(ThemeMode.dark);
+    } else {
+      await setTheme(ThemeMode.light);
+    }
+  }
+}
+
+class Material3Notifier extends StateNotifier<bool> {
+  Material3Notifier() : super(false) {
+    _loadMaterial3();
+  }
+
+  // SharedPreferencesからMaterial3の利用設定を読み込む
+  Future<void> _loadMaterial3() async {
+    final prefs = await SharedPreferences.getInstance();
+    final isEnabled = prefs.getBool('use_material3') ?? false;
+    state = isEnabled;
+  }
+
+  // Material3の利用設定を更新し、SharedPreferencesにも保存する
+  Future<void> setMaterial3(bool value) async {
+    state = value;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('use_material3', value);
+  }
+}
+
+/// Material 3 の利用状態を管理するシンプルなプロバイダー
+final useMaterial3Provider = StateNotifierProvider<Material3Notifier, bool>(
+  (ref) => Material3Notifier(),
+);
+
 /// ---------------------------------------------------------------------------
 /// BuildContext の拡張: 各種サイズ（パディング、アイコン、フォントサイズ等）を返す
 /// ---------------------------------------------------------------------------
@@ -1174,26 +1249,33 @@ void main() async {
 /// [MyApp]
 /// ─────────────────────────────────────────────────────────
 /// アプリ全体のテーマ設定やホーム画面(SearchPage)を設定するルートウィジェットです。
-class MyApp extends StatelessWidget {
+class MyApp extends ConsumerWidget {
   const MyApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final themeMode = ref.watch(themeProvider);
+    final useMaterial3 = ref.watch(useMaterial3Provider);
     return MaterialApp(
       title: '単語検索＆保存アプリ',
       theme: ThemeData(
-        primarySwatch: Colors.blue,
         fontFamily: 'Murecho',
-        useMaterial3: false,
-        inputDecorationTheme: const InputDecorationTheme(
-          border: OutlineInputBorder(),
-        ),
+        primarySwatch: Colors.blue,
+        brightness: Brightness.light,
+        useMaterial3: useMaterial3,
       ),
-      // ホーム画面はSearchPageで、ユーザーが単語の検索や操作を行えます
+      darkTheme: ThemeData(
+        fontFamily: 'Murecho',
+        primarySwatch: Colors.blue,
+        brightness: Brightness.dark,
+        useMaterial3: useMaterial3,
+      ),
+      themeMode: themeMode,
       home: const SearchPage(),
     );
   }
 }
+
 // *****************************************************************************
 // Custom Products to Word Test Page (Quiz Screen)
 // このセクションでは、ユーザーが追加した単語や検索・テスト画面に関するビジネスロジックとUIを管理します。
@@ -1284,20 +1366,18 @@ class SearchPage extends ConsumerStatefulWidget {
 /// 並び替え処理用の状態などを管理する
 class _SearchPageState extends ConsumerState<SearchPage> {
   final TextEditingController _controller = TextEditingController();
-
-  // 検索クエリ未入力時にランダムで表示する単語のキャッシュ
   List<Product>? _cachedRandomProducts;
 
-  // 並び替えモード用の状態（今回は固定モードとして _isSorting は false）
-  final bool _isSorting = false;
-  List<Product>? _sortedProducts;
-
-  /// _onRefresh()
-  /// 画面プルダウンリフレッシュ時にキャッシュをクリアし、プロバイダーのデータを再読み込みする
   Future<void> _onRefresh() async {
     _cachedRandomProducts = null;
     await Future.delayed(const Duration(milliseconds: 1000));
     ref.invalidate(productsProvider);
+  }
+
+  /// 単語詳細ダイアログを開く前に履歴に追加
+  void _openProductDialog(Product product) {
+    ref.read(searchHistoryProvider.notifier).addProduct(product.name);
+    showProductDialog(context, product);
   }
 
   @override
@@ -1368,7 +1448,6 @@ class _SearchPageState extends ConsumerState<SearchPage> {
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: () {
-        // 画面タップ時にキーボードやフォーカスを外す
         FocusScope.of(context).unfocus();
       },
       child: Scaffold(
@@ -1525,10 +1604,10 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                               ),
                             ),
                           ),
-                          const Divider(height: 1),
 
-                          // ★ 新規追加：設定項目
-                          // 例：SearchPageのメニュー表示部分（既存項目の後ろに追加）
+                          const Divider(height: 1),
+                          // 既存の SearchPage のモーダルメニュー内に「設定」項目を追加
+// （SearchPage の build() メソッド内、メニュー表示部分の最後あたりに追加）
                           InkWell(
                             onTap: () {
                               Navigator.pop(context);
@@ -1540,23 +1619,27 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                             },
                             child: Container(
                               padding: EdgeInsets.symmetric(
-                                  vertical: context.paddingMedium,
-                                  horizontal: context.paddingSmall),
+                                vertical: context.paddingMedium,
+                                horizontal: context.paddingSmall,
+                              ),
                               child: Row(
                                 children: [
                                   const Icon(Icons.settings,
                                       color: Colors.blue),
-                                  const SizedBox(width: 16),
+                                  context.horizontalSpaceMedium,
                                   Expanded(
-                                    child: Text("設定",
-                                        style: TextStyle(
-                                            fontSize: context.fontSizeMedium)),
+                                    child: Text(
+                                      "設定",
+                                      style: TextStyle(
+                                          fontSize: context.fontSizeMedium),
+                                    ),
                                   ),
                                 ],
                               ),
                             ),
                           ),
                           const Divider(height: 1),
+
                           InkWell(
                             onTap: () {
                               Navigator.pop(context);
@@ -1592,13 +1675,11 @@ class _SearchPageState extends ConsumerState<SearchPage> {
             ),
           ],
         ),
-        // 検索入力欄と、検索結果またはランダム表示の単語リストを表示する
         body: RefreshIndicator(
           onRefresh: _onRefresh,
           child: ListView(
             physics: const AlwaysScrollableScrollPhysics(),
             children: [
-              // 検索テキストフィールド
               Padding(
                 padding: EdgeInsets.all(context.paddingMedium),
                 child: TextField(
@@ -1615,7 +1696,6 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                   },
                 ),
               ),
-              // プロバイダーの状態に基づいた単語リストの表示処理
               productsAsync.when(
                 loading: () => Padding(
                   padding:
@@ -1626,14 +1706,12 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                 data: (products) {
                   List<Product> filteredProducts;
                   if (searchQuery.isNotEmpty) {
-                    // 検索クエリに一致する単語のみ抽出
                     filteredProducts = products.where((p) {
                       final query = searchQuery.toLowerCase();
                       return p.name.toLowerCase().contains(query) ||
                           p.yomigana.toLowerCase().contains(query);
                     }).toList();
                   } else {
-                    // 検索未入力時は、ランダムに15件表示（キャッシュして再計算を避ける）
                     _cachedRandomProducts ??= () {
                       final randomizedProducts = List<Product>.from(products);
                       randomizedProducts.shuffle();
@@ -1641,7 +1719,6 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                     }();
                     filteredProducts = _cachedRandomProducts!;
                   }
-
                   if (filteredProducts.isEmpty) {
                     return Padding(
                       padding:
@@ -1649,58 +1726,23 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                       child: const Center(child: Text('一致する単語がありません')),
                     );
                   }
-
-                  // 並び替えモードの場合（※今回は固定モード）
-                  if (_isSorting) {
-                    _sortedProducts ??= List<Product>.from(filteredProducts);
-                    return SizedBox(
-                      height: filteredProducts.length * 80,
-                      child: ReorderableListView.builder(
-                        itemCount: _sortedProducts!.length,
-                        onReorder: (oldIndex, newIndex) {
-                          setState(() {
-                            if (newIndex > oldIndex) newIndex--;
-                            final product = _sortedProducts!.removeAt(oldIndex);
-                            _sortedProducts!.insert(newIndex, product);
-                          });
+                  return Column(
+                    children: filteredProducts.map((product) {
+                      return GestureDetector(
+                        onLongPress: () {
+                          _showActionSheet(product);
                         },
-                        itemBuilder: (context, index) {
-                          final product = _sortedProducts![index];
-                          return GestureDetector(
-                            key: ValueKey(product.name),
-                            onLongPress: () {
-                              _showActionSheet(product);
-                            },
-                            child: ProductCard(
-                              product: product,
-                              margin: EdgeInsets.symmetric(
-                                  vertical: context.paddingMedium,
-                                  horizontal: context.paddingMedium),
-                              onTap: () => showProductDialog(context, product),
-                            ),
-                          );
-                        },
-                      ),
-                    );
-                  } else {
-                    // 通常モード：ListView で単語カードを列挙
-                    return Column(
-                      children: filteredProducts.map((product) {
-                        return GestureDetector(
-                          onLongPress: () {
-                            _showActionSheet(product);
-                          },
-                          child: ProductCard(
-                            product: product,
-                            margin: EdgeInsets.symmetric(
-                                vertical: context.paddingExtraSmall,
-                                horizontal: context.paddingSmall),
-                            onTap: () => showProductDialog(context, product),
-                          ),
-                        );
-                      }).toList(),
-                    );
-                  }
+                        onTap: () => _openProductDialog(product),
+                        child: ProductCard(
+                          product: product,
+                          margin: EdgeInsets.symmetric(
+                              vertical: context.paddingExtraSmall,
+                              horizontal: context.paddingSmall),
+                          onTap: () => _openProductDialog(product),
+                        ),
+                      );
+                    }).toList(),
+                  );
                 },
               ),
             ],
@@ -4492,127 +4534,556 @@ class WordSearchPage extends ConsumerWidget {
   }
 }
 
-///////////////////////////////////////////////////////////////
-// SettingsPage
-///////////////////////////////////////////////////////////////
-/// [SettingsPage] は、ユーザーのアプリ設定（ここでは勉強開始時間の有効／無効及び時間設定）を管理する画面です。
-/// ・SwitchListTile で勉強開始時間の有効／無効を切り替え、
-///   有効な場合はリスト項目として時間の設定も行えます。
-class SettingsPage extends ConsumerWidget {
-  const SettingsPage({Key? key}) : super(key: key);
+// 設定画面（SettingsPage）実装例
+class SettingsPage extends StatelessWidget {
+  const SettingsPage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    // studySettingsProvider から現在の設定状態を取得
-    final studySettings = ref.watch(studySettingsProvider);
-
+  Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("設定"),
+        title: const Text('設定'),
+        centerTitle: true,
       ),
       body: ListView(
         children: [
-          // スイッチで勉強開始時間設定の有効／無効を切り替える
-          SwitchListTile(
-            title: const Text("勉強開始時間を有効にする"),
-            value: studySettings.enableStudyStartTime,
-            onChanged: (value) {
-              ref
-                  .read(studySettingsProvider.notifier)
-                  .setEnableStudyStartTime(value);
+          // 全般セクション
+          Padding(
+            padding: EdgeInsets.all(context.paddingMedium),
+            child: Text(
+              "全般",
+              style: TextStyle(
+                fontSize: context.fontSizeLarge,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          ListTile(
+            leading: const Icon(Icons.color_lens),
+            title: const Text("テーマの変更"),
+            trailing: const Icon(Icons.arrow_forward),
+            onTap: () {
+              // テーマ変更用の画面に遷移
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const ThemeSettingsPage()),
+              );
             },
           ),
-          // 有効な場合のみ、時間設定項目を表示
-          if (studySettings.enableStudyStartTime)
-            ListTile(
-              title: const Text("勉強開始時間"),
-              subtitle: Text(studySettings.studyStartTime),
-              trailing: const Icon(Icons.access_time),
-              onTap: () async {
-                final parts = studySettings.studyStartTime.split(":");
-                TimeOfDay initialTime = TimeOfDay(
-                  hour: int.parse(parts[0]),
-                  minute: int.parse(parts[1]),
-                );
-                final chosenTime = await showTimePicker(
-                  context: context,
-                  initialTime: initialTime,
-                );
-                if (chosenTime != null) {
-                  final formatted =
-                      "${chosenTime.hour.toString().padLeft(2, '0')}:${chosenTime.minute.toString().padLeft(2, '0')}";
-                  ref
-                      .read(studySettingsProvider.notifier)
-                      .setStudyStartTime(formatted);
-                }
+
+          ListTile(
+            leading: const Icon(Icons.notifications),
+            title: const Text("通知"),
+            trailing: Switch(
+              value: true, // これはプレースホルダです。通知の有効／無効管理ロジックを追加してください。
+              onChanged: (value) {
+                // 通知設定のトグル処理をここに実装
               },
             ),
+          ),
+          ListTile(
+            leading: const Icon(Icons.delete_forever),
+            title: const Text("キャッシュクリア"),
+            trailing: const Icon(Icons.arrow_forward),
+            onTap: () async {
+              // 例：SharedPreferences のキャッシュクリア
+              final prefs = await SharedPreferences.getInstance();
+              await prefs.clear();
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text("キャッシュをクリアしました。")),
+              );
+            },
+          ),
+          const Divider(),
+
+          // 単語検索画面セクション
+          Padding(
+            padding: EdgeInsets.all(context.paddingMedium),
+            child: Text(
+              "単語検索画面",
+              style: TextStyle(
+                fontSize: context.fontSizeLarge,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          ListTile(
+            leading: const Icon(Icons.history),
+            title: const Text("検索履歴"),
+            trailing: const Icon(Icons.arrow_forward),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const SearchHistoryPage()),
+              );
+            },
+          ),
+          const Divider(),
+
+          // メモセクション
+          Padding(
+            padding: EdgeInsets.all(context.paddingMedium),
+            child: Text(
+              "メモ",
+              style: TextStyle(
+                fontSize: context.fontSizeLarge,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          ListTile(
+            leading: const Icon(Icons.note),
+            title: const Text("メモ一覧"),
+            trailing: const Icon(Icons.arrow_forward),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const MemoListPage()),
+              );
+            },
+          ),
+          const Divider(),
+
+          // セキュリティとプライバシーポリシーセクション
+          Padding(
+            padding: EdgeInsets.all(context.paddingMedium),
+            child: Text(
+              "セキュリティとプライバシーポリシー",
+              style: TextStyle(
+                fontSize: context.fontSizeLarge,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          ListTile(
+            leading: const Icon(Icons.help),
+            title: const Text("ヘルプ"),
+            trailing: const Icon(Icons.arrow_forward),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const HelpPage()),
+              );
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.description),
+            title: const Text("利用規約"),
+            trailing: const Icon(Icons.arrow_forward),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const TermsPage()),
+              );
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.feedback),
+            title: const Text("フィードバック"),
+            trailing: const Icon(Icons.arrow_forward),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const FeedbackPage()),
+              );
+            },
+          ),
         ],
       ),
     );
   }
 }
 
-///////////////////////////////////////////////////////////////
-// StudySettings Data Model
-///////////////////////////////////////////////////////////////
-/// [StudySettings] は、勉強設定に関するデータモデルです。
-/// ・enableStudyStartTime: 勉強開始時間を有効にするかどうかのフラグ
-/// ・studyStartTime: 実際の勉強開始時間（例 "08:00"）を文字列で保持
-class StudySettings {
-  final bool enableStudyStartTime;
-  final String studyStartTime;
+class SearchHistoryPage extends ConsumerWidget {
+  const SearchHistoryPage({super.key});
 
-  StudySettings({
-    required this.enableStudyStartTime,
-    required this.studyStartTime,
-  });
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    // プロバイダーから履歴リストを取得（先頭が最新）
+    final history = ref.watch(searchHistoryProvider);
+    final productsAsync = ref.watch(productsProvider);
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text("検索履歴"),
+        centerTitle: true,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.clear),
+            onPressed: () {
+              ref.read(searchHistoryProvider.notifier).clearHistory();
+            },
+          )
+        ],
+      ),
+      body: productsAsync.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (error, _) => Center(child: Text("データ読み込みエラー: $error")),
+        data: (allProducts) {
+          // history の各単語名に対して、全単語リストから存在する場合のみ追加する
+          final historyProducts = <Product>[];
+          for (final name in history) {
+            // 全単語リスト内で name と一致する商品が存在するかチェック
+            final matchingProducts =
+                allProducts.where((p) => p.name == name).toList();
+            if (matchingProducts.isNotEmpty) {
+              historyProducts.add(matchingProducts.first);
+            }
+          }
+          // 最新順に追加しているので、historyProducts の先頭が最新
+          // 15 件以上ある場合は先頭 15 件のみを保持
+          final limitedHistoryProducts = historyProducts.take(15).toList();
+
+          if (limitedHistoryProducts.isEmpty) {
+            return Padding(
+              padding: EdgeInsets.symmetric(vertical: context.paddingMedium),
+              child: Center(
+                child: Text(
+                  "検索履歴がありません",
+                  style: TextStyle(fontSize: context.fontSizeMedium),
+                ),
+              ),
+            );
+          }
+          return CommonProductListView(
+            products: limitedHistoryProducts,
+            itemBuilder: (context, product) {
+              return GestureDetector(
+                onTap: () => showProductDialog(context, product),
+                child: ProductCard(
+                  product: product,
+                  margin: EdgeInsets.symmetric(
+                    vertical: context.paddingExtraSmall,
+                    horizontal: context.paddingExtraSmall,
+                  ),
+                ),
+              );
+            },
+          );
+        },
+      ),
+    );
+  }
 }
 
-///////////////////////////////////////////////////////////////
-// StudySettingsNotifier
-///////////////////////////////////////////////////////////////
-/// [StudySettingsNotifier] は、[StudySettings] の状態管理を行う StateNotifier です。
-/// ・SharedPreferences から初期設定を読み込み、
-/// ・setEnableStudyStartTime, setStudyStartTime で設定変更と永続化を行います。
-class StudySettingsNotifier extends StateNotifier<StudySettings> {
-  StudySettingsNotifier()
-      : super(StudySettings(
-            enableStudyStartTime: false, studyStartTime: "08:00")) {
-    _loadSettings();
+class MemoListPage extends ConsumerStatefulWidget {
+  const MemoListPage({Key? key}) : super(key: key);
+
+  @override
+  ConsumerState<MemoListPage> createState() => _MemoListPageState();
+}
+
+class _MemoListPageState extends ConsumerState<MemoListPage> {
+  /// 全単語リストから、各商品のメモを loadMemo() で取得し、
+  /// メモが記載されている商品のみ抽出する
+  Future<List<Product>> _getMemoProducts(List<Product> products) async {
+    List<Product> memoProducts = [];
+    for (var product in products) {
+      final memo = await loadMemo(product);
+      if (memo.trim().isNotEmpty) {
+        memoProducts.add(product);
+      }
+    }
+    return memoProducts;
   }
 
-  // SharedPreferences から保存済みの設定値を読み込み、state を更新
-  Future<void> _loadSettings() async {
+  /// 指定された商品のメモをクリアする（SharedPreferencesから削除）
+  Future<void> _clearMemo(Product product) async {
     final prefs = await SharedPreferences.getInstance();
-    bool enabled = prefs.getBool('study_enableStartTime') ?? false;
-    String startTime = prefs.getString('study_startTime') ?? "08:00";
-    state =
-        StudySettings(enableStudyStartTime: enabled, studyStartTime: startTime);
+    await prefs.remove('memo_${product.name}');
   }
 
-  // 勉強開始時間の有効/無効の設定を更新し、SharedPreferences へ永続化する
-  Future<void> setEnableStudyStartTime(bool value) async {
-    state = StudySettings(
-        enableStudyStartTime: value, studyStartTime: state.studyStartTime);
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('study_enableStartTime', value);
-  }
+  @override
+  Widget build(BuildContext context) {
+    final productsAsync = ref.watch(productsProvider);
 
-  // 勉強開始時間を更新し、SharedPreferences へ永続化する
-  Future<void> setStudyStartTime(String time) async {
-    state = StudySettings(
-        enableStudyStartTime: state.enableStudyStartTime, studyStartTime: time);
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('study_startTime', time);
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text("メモ一覧"),
+        centerTitle: true,
+      ),
+      body: productsAsync.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (error, _) => Center(child: Text("データ読み込みエラー: $error")),
+        data: (products) {
+          return FutureBuilder<List<Product>>(
+            future: _getMemoProducts(products),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState != ConnectionState.done) {
+                return const Center(child: CircularProgressIndicator());
+              }
+              final memoProducts = snapshot.data ?? [];
+              if (memoProducts.isEmpty) {
+                return Center(
+                  child: Text("保存されているメモはありません",
+                      style: TextStyle(fontSize: context.fontSizeMedium)),
+                );
+              }
+              return ListView.builder(
+                itemCount: memoProducts.length,
+                itemBuilder: (context, index) {
+                  final product = memoProducts[index];
+                  return Dismissible(
+                    key: ValueKey(product.name),
+                    direction: DismissDirection.endToStart,
+                    background: Container(
+                      alignment: Alignment.centerRight,
+                      padding: EdgeInsets.only(right: context.paddingMedium),
+                      color: Colors.red,
+                      child: const Icon(Icons.delete, color: Colors.white),
+                    ),
+                    confirmDismiss: (direction) async {
+                      return await showDialog<bool>(
+                            context: context,
+                            builder: (context) {
+                              return AlertDialog(
+                                title: const Text("削除の確認"),
+                                content:
+                                    Text("${product.name} のメモを削除してよろしいですか？"),
+                                actions: [
+                                  TextButton(
+                                      onPressed: () =>
+                                          Navigator.pop(context, false),
+                                      child: const Text("キャンセル")),
+                                  ElevatedButton(
+                                      onPressed: () =>
+                                          Navigator.pop(context, true),
+                                      child: const Text("削除")),
+                                ],
+                              );
+                            },
+                          ) ??
+                          false;
+                    },
+                    onDismissed: (direction) async {
+                      await _clearMemo(product);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text("メモが削除されました")),
+                      );
+                      setState(() {}); // 再評価して削除反映
+                    },
+                    child: ListTile(
+                      contentPadding: EdgeInsets.symmetric(
+                        vertical: context.paddingExtraSmall,
+                        horizontal: context.paddingSmall,
+                      ),
+                      title: Text(
+                        product.name,
+                        style: TextStyle(
+                          fontSize: context.fontSizeMedium,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      subtitle: FutureBuilder<String>(
+                        future: loadMemo(product),
+                        builder: (context, memoSnapshot) {
+                          if (memoSnapshot.connectionState !=
+                              ConnectionState.done) {
+                            return const Text("読み込み中...");
+                          }
+                          String memoText = memoSnapshot.data ?? "";
+                          if (memoText.length > 15) {
+                            memoText = memoText.substring(0, 15) + "...";
+                          }
+                          return Text(
+                            memoText,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                                fontSize: context.fontSizeSmall,
+                                color: Colors.grey[600]),
+                          );
+                        },
+                      ),
+                      onLongPress: () async {
+                        bool? confirm = await showDialog<bool>(
+                          context: context,
+                          builder: (context) {
+                            return AlertDialog(
+                              title: const Text("メモ削除の確認"),
+                              content: Text("${product.name} のメモを削除してよろしいですか？"),
+                              actions: [
+                                TextButton(
+                                    onPressed: () =>
+                                        Navigator.pop(context, false),
+                                    child: const Text("キャンセル")),
+                                ElevatedButton(
+                                    onPressed: () =>
+                                        Navigator.pop(context, true),
+                                    child: const Text("削除")),
+                              ],
+                            );
+                          },
+                        );
+                        if (confirm ?? false) {
+                          await _clearMemo(product);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text("メモが削除されました")),
+                          );
+                          setState(() {}); // 再描画
+                        }
+                      },
+                      onTap: () => showProductDialog(context, product),
+                    ),
+                  );
+                },
+              );
+            },
+          );
+        },
+      ),
+    );
   }
 }
 
-///////////////////////////////////////////////////////////////
-// studySettingsProvider
-///////////////////////////////////////////////////////////////
-/// [studySettingsProvider] は、StudySettingsNotifier を通じて
-/// アプリ全体で勉強設定の状態を共有するためのプロバイダーです。
-final studySettingsProvider =
-    StateNotifierProvider<StudySettingsNotifier, StudySettings>(
-        (ref) => StudySettingsNotifier());
+class HelpPage extends StatelessWidget {
+  const HelpPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text("ヘルプ"),
+        centerTitle: true,
+      ),
+      body: Center(
+        child: Text(
+          "ヘルプ画面（実装予定）",
+          style: TextStyle(fontSize: context.fontSizeMedium),
+        ),
+      ),
+    );
+  }
+}
+
+class TermsPage extends StatelessWidget {
+  const TermsPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text("利用規約"),
+        centerTitle: true,
+      ),
+      body: Center(
+        child: Text(
+          "利用規約画面（実装予定）",
+          style: TextStyle(fontSize: context.fontSizeMedium),
+        ),
+      ),
+    );
+  }
+}
+
+class FeedbackPage extends StatelessWidget {
+  const FeedbackPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text("フィードバック"),
+        centerTitle: true,
+      ),
+      body: Center(
+        child: Text(
+          "フィードバック画面（実装予定）",
+          style: TextStyle(fontSize: context.fontSizeMedium),
+        ),
+      ),
+    );
+  }
+}
+
+class ThemeSettingsPage extends ConsumerWidget {
+  const ThemeSettingsPage({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final currentTheme = ref.watch(themeProvider);
+    // Material3 の状態は新しいプロバイダーから読み込む
+    final useMaterial3 = ref.watch(useMaterial3Provider);
+
+    return Scaffold(
+      appBar: AppBar(title: const Text("テーマの変更")),
+      body: ListView(
+        children: [
+          RadioListTile<ThemeMode>(
+            title: const Text("システム"),
+            value: ThemeMode.system,
+            groupValue: currentTheme,
+            onChanged: (ThemeMode? value) {
+              if (value != null) {
+                ref.read(themeProvider.notifier).setTheme(value);
+              }
+            },
+          ),
+          RadioListTile<ThemeMode>(
+            title: const Text("ライト"),
+            value: ThemeMode.light,
+            groupValue: currentTheme,
+            onChanged: (ThemeMode? value) {
+              if (value != null) {
+                ref.read(themeProvider.notifier).setTheme(value);
+              }
+            },
+          ),
+          RadioListTile<ThemeMode>(
+            title: const Text("ダーク"),
+            value: ThemeMode.dark,
+            groupValue: currentTheme,
+            onChanged: (ThemeMode? value) {
+              if (value != null) {
+                ref.read(themeProvider.notifier).setTheme(value);
+              }
+            },
+          ),
+          const Divider(),
+          // Material 3 のON/OFFスイッチ
+          SwitchListTile(
+            title: const Text("Material 3 の利用"),
+            value: useMaterial3,
+            onChanged: (value) {
+              ref.read(useMaterial3Provider.notifier).setMaterial3(value);
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class SearchHistoryNotifier extends StateNotifier<List<String>> {
+  SearchHistoryNotifier() : super([]) {
+    _loadHistory();
+  }
+
+  Future<void> _loadHistory() async {
+    final prefs = await SharedPreferences.getInstance();
+    final list = prefs.getStringList('search_history') ?? [];
+    state = list;
+  }
+
+  Future<void> addProduct(String productName) async {
+    final prefs = await SharedPreferences.getInstance();
+    List<String> newHistory = List.from(state);
+    newHistory.remove(productName); // 重複があれば削除
+    newHistory.insert(0, productName); // 最新を先頭に追加
+    if (newHistory.length > 15) {
+      newHistory = newHistory.sublist(0, 15);
+    }
+    state = newHistory;
+    await prefs.setStringList('search_history', state);
+  }
+
+  Future<void> clearHistory() async {
+    state = [];
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList('search_history', state);
+  }
+}
+
+final searchHistoryProvider =
+    StateNotifierProvider<SearchHistoryNotifier, List<String>>(
+        (ref) => SearchHistoryNotifier());
