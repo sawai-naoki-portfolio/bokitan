@@ -11,6 +11,84 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
 import 'package:math_expressions/math_expressions.dart';
+import 'package:url_launcher/url_launcher.dart';
+
+class FeedbackPage extends StatelessWidget {
+  const FeedbackPage({super.key});
+
+  // Google Form の公開URLをここに設定してください。
+  final String feedbackUrl = 'https://forms.gle/uF48zD3zLPVNuyU1A';
+
+  Future<void> _launchFeedbackForm(BuildContext context) async {
+    final Uri url = Uri.parse(feedbackUrl);
+    if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("フィードバックフォームを開けませんでした")),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Scaffold(
+      backgroundColor: theme.scaffoldBackgroundColor,
+      appBar: AppBar(
+        title: const Text("フィードバック"),
+        centerTitle: true,
+      ),
+      body: Center(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Card(
+            elevation: 8,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(24),
+            ),
+            margin: const EdgeInsets.all(16),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.feedback_outlined,
+                    size: 64,
+                    color: theme.primaryColor,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    "ご意見・ご要望",
+                    style: theme.textTheme.titleLarge,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    "アプリに関するご意見や改善点、その他何でもお知らせください。\nフィードバックは今後の改善に役立てさせていただきます。",
+                  textAlign: TextAlign.center,
+                    style: theme.textTheme.bodyMedium,
+                  ),
+                  const SizedBox(height: 24),
+                  ElevatedButton.icon(
+                    onPressed: () => _launchFeedbackForm(context),
+                    icon: const Icon(Icons.send),
+                    label: const Text("フィードバックを送る"),
+                    style: ElevatedButton.styleFrom(
+                      padding:
+                      const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(30),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
 
 /// テーマの状態を管理する StateNotifier とプロバイダー
 final themeProvider = StateNotifierProvider<ThemeNotifier, ThemeMode>(
@@ -4688,6 +4766,7 @@ class SettingsPage extends StatelessWidget {
               );
             },
           ),
+
         ],
       ),
     );
@@ -4969,26 +5048,6 @@ class TermsPage extends StatelessWidget {
       body: Center(
         child: Text(
           "利用規約画面（実装予定）",
-          style: TextStyle(fontSize: context.fontSizeMedium),
-        ),
-      ),
-    );
-  }
-}
-
-class FeedbackPage extends StatelessWidget {
-  const FeedbackPage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text("フィードバック"),
-        centerTitle: true,
-      ),
-      body: Center(
-        child: Text(
-          "フィードバック画面（実装予定）",
           style: TextStyle(fontSize: context.fontSizeMedium),
         ),
       ),

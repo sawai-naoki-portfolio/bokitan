@@ -37,6 +37,7 @@ dependencies:
   flutter_riverpod: ^3.0.0-dev.3
   riverpod_annotation: ^3.0.0-dev.3
   shared_preferences: ^2.5.3
+  url_launcher: ^6.1.7
 
 flutter_launcher_icons:
   android: true
