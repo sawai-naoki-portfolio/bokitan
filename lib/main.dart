@@ -12,6 +12,94 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
 import 'package:math_expressions/math_expressions.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:flutter_phoenix/flutter_phoenix.dart';
+
+final searchHistoryProvider =
+StateNotifierProvider<SearchHistoryNotifier, List<String>>(
+        (ref) => SearchHistoryNotifier());
+
+/// テーマの状態を管理する StateNotifier とプロバイダー
+final themeProvider = StateNotifierProvider<ThemeNotifier, ThemeMode>(
+      (ref) => ThemeNotifier(),
+);
+
+/// Material 3 の利用状態を管理するシンプルなプロバイダー
+final useMaterial3Provider = StateNotifierProvider<Material3Notifier, bool>(
+      (ref) => Material3Notifier(),
+);
+
+/// ---------------------------------------------------------------------------
+/// productsProvider
+/// ─ アセットのJSONファイルから単語リストを非同期で読み込むProvider
+/// ---------------------------------------------------------------------------
+final productsProvider = FutureProvider<List<Product>>((ref) async {
+  final data = await rootBundle.loadString('assets/products.json');
+  final jsonResult = jsonDecode(data) as List;
+  return jsonResult.map((json) => Product.fromJson(json)).toList();
+});
+
+/// 検索クエリの状態を管理するProvider
+final searchQueryProvider = StateProvider<String>((ref) => '');
+
+final savedItemsProvider =
+StateNotifierProvider<SavedItemsNotifier, List<String>>(
+      (ref) => SavedItemsNotifier(),
+);
+
+/// 非表示にした単語の名前を保持する Provider
+final hiddenSavedProvider = StateProvider<Set<String>>((ref) => {});
+
+final categoriesProvider =
+StateNotifierProvider<CategoriesNotifier, List<Category>>(
+        (ref) => CategoriesNotifier());
+
+/// Providerを通じて、アプリ内でチェックされた単語の状態を共有します。
+final checkedQuestionsProvider =
+StateNotifierProvider<CheckedQuestionsNotifier, Set<String>>(
+        (ref) => CheckedQuestionsNotifier());
+
+/// プロバイダー定義：ユーザーが追加したカスタム単語を管理する
+final customProductsProvider =
+StateNotifierProvider<CustomProductsNotifier, List<Product>>(
+        (ref) => CustomProductsNotifier());
+
+/// ---------------------------------------------------------------------------
+/// allProductsProvider
+/// ---------------------------------------------------------------------------
+/// アセット(JSON)からロードした単語とカスタム単語（ユーザー追加）を統合して返すシンプルなプロバイダー
+final allProductsProvider = Provider<List<Product>>((ref) {
+  final assetProductsAsync = ref.watch(productsProvider);
+  final customProducts = ref.watch(customProductsProvider);
+  List<Product> assetProducts = [];
+
+  // FutureProvider の状態に合わせてアセット単語リストを抽出
+  assetProductsAsync.when(
+    data: (products) => assetProducts = products,
+    loading: () {},
+    error: (_, __) {},
+  );
+  // 両方のリストを統合して返す
+  return [...assetProducts, ...customProducts];
+});
+
+// プロバイダー定義：アプリ全体でミス回数の状態を共有するための Provider
+final mistakeCountsProvider =
+StateNotifierProvider<MistakeCountNotifier, Map<String, int>>(
+      (ref) => MistakeCountNotifier(),
+);
+
+// ============================================================================
+// sortingProblemsProvider
+// -----------------------------------------------------------------------------
+// この FutureProvider は、assets/siwake.json から仕訳問題のリストを非同期
+// で読み込み、SortingProblem インスタンスのリストとして返します。
+// ============================================================================
+final sortingProblemsProvider =
+FutureProvider<List<SortingProblem>>((ref) async {
+  final data = await rootBundle.loadString('assets/siwake.json');
+  final List<dynamic> jsonResult = jsonDecode(data);
+  return jsonResult.map((json) => SortingProblem.fromJson(json)).toList();
+});
 
 class FeedbackPage extends StatelessWidget {
   const FeedbackPage({super.key});
@@ -22,8 +110,10 @@ class FeedbackPage extends StatelessWidget {
   Future<void> _launchFeedbackForm(BuildContext context) async {
     final Uri url = Uri.parse(feedbackUrl);
     if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
+      if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("フィードバックフォームを開けませんでした")),
+        const SnackBar(
+            content: Text("フィードバックフォームを開けませんでした")),
       );
     }
   }
@@ -64,7 +154,7 @@ class FeedbackPage extends StatelessWidget {
                   const SizedBox(height: 16),
                   Text(
                     "アプリに関するご意見や改善点、その他何でもお知らせください。\nフィードバックは今後の改善に役立てさせていただきます。",
-                  textAlign: TextAlign.center,
+                    textAlign: TextAlign.center,
                     style: theme.textTheme.bodyMedium,
                   ),
                   const SizedBox(height: 24),
@@ -73,8 +163,8 @@ class FeedbackPage extends StatelessWidget {
                     icon: const Icon(Icons.send),
                     label: const Text("フィードバックを送る"),
                     style: ElevatedButton.styleFrom(
-                      padding:
-                      const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 32, vertical: 16),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(30),
                       ),
@@ -89,11 +179,6 @@ class FeedbackPage extends StatelessWidget {
     );
   }
 }
-
-/// テーマの状態を管理する StateNotifier とプロバイダー
-final themeProvider = StateNotifierProvider<ThemeNotifier, ThemeMode>(
-  (ref) => ThemeNotifier(),
-);
 
 class ThemeNotifier extends StateNotifier<ThemeMode> {
   ThemeNotifier() : super(ThemeMode.light) {
@@ -160,17 +245,15 @@ class Material3Notifier extends StateNotifier<bool> {
   }
 }
 
-/// Material 3 の利用状態を管理するシンプルなプロバイダー
-final useMaterial3Provider = StateNotifierProvider<Material3Notifier, bool>(
-  (ref) => Material3Notifier(),
-);
-
 /// ---------------------------------------------------------------------------
 /// BuildContext の拡張: 各種サイズ（パディング、アイコン、フォントサイズ等）を返す
 /// ---------------------------------------------------------------------------
 extension ResponsiveSizes on BuildContext {
   /// 現在の画面サイズ（幅×高さ）を返す
-  Size get screenSize => MediaQuery.of(this).size;
+  Size get screenSize =>
+      MediaQuery
+          .of(this)
+          .size;
 
   // 以下、画面サイズに応じた相対的なパディング値
   double get paddingExtraSmall => screenSize.width * 0.01;
@@ -294,8 +377,8 @@ class ThousandsSeparatorInputFormatter extends TextInputFormatter {
   final NumberFormat _formatter = NumberFormat('#,###');
 
   @override
-  TextEditingValue formatEditUpdate(
-      TextEditingValue oldValue, TextEditingValue newValue) {
+  TextEditingValue formatEditUpdate(TextEditingValue oldValue,
+      TextEditingValue newValue) {
     // 入力が空の場合はそのまま返す
     if (newValue.text.isEmpty) return newValue;
 
@@ -354,7 +437,10 @@ void showProductDialog(BuildContext context, Product product) {
             // 内容部には単語説明と、その単語のメモを表示
             content: Container(
               constraints: BoxConstraints(
-                maxHeight: MediaQuery.of(context).size.height * 0.5,
+                maxHeight: MediaQuery
+                    .of(context)
+                    .size
+                    .height * 0.5,
               ),
               child: SingleChildScrollView(
                 child: Column(
@@ -437,7 +523,7 @@ Future<void> showMemoDialog(BuildContext context, Product product) async {
   final prefs = await SharedPreferences.getInstance();
   final String initialMemo = prefs.getString('memo_${product.name}') ?? "";
   final controller = TextEditingController(text: initialMemo);
-
+  if (!context.mounted) return;
   await showDialog(
     context: context,
     builder: (context) {
@@ -445,7 +531,8 @@ Future<void> showMemoDialog(BuildContext context, Product product) async {
         title: const Text("メモを書く"),
         content: TextField(
           controller: controller,
-          decoration: const InputDecoration(hintText: "ここにメモを入力してください"),
+          decoration: const InputDecoration(
+              hintText: "ここにメモを入力してください"),
           maxLines: null,
         ),
         actions: [
@@ -457,6 +544,7 @@ Future<void> showMemoDialog(BuildContext context, Product product) async {
             onPressed: () async {
               final memo = controller.text.trim();
               await prefs.setString('memo_${product.name}', memo);
+              if (!context.mounted) return;
               Navigator.pop(context);
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text("メモが保存されました")),
@@ -504,24 +592,25 @@ Future<String?> showCategoryCreationDialog(BuildContext context) async {
 /// showCategoryDeleteDialog
 /// ─ カテゴリー削除前の確認ダイアログを表示する
 /// ---------------------------------------------------------------------------
-Future<bool?> showCategoryDeleteDialog(
-    BuildContext context, String categoryName) {
+Future<bool?> showCategoryDeleteDialog(BuildContext context,
+    String categoryName) {
   return showDialog<bool>(
     context: context,
-    builder: (context) => AlertDialog(
-      title: const Text("カテゴリーの削除"),
-      content: Text("カテゴリー「$categoryName」を削除してよろしいですか？"),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context, false),
-          child: const Text("キャンセル"),
+    builder: (context) =>
+        AlertDialog(
+          title: const Text("カテゴリーの削除"),
+          content: Text("カテゴリー「$categoryName」を削除してよろしいですか？"),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text("キャンセル"),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text("削除"),
+            ),
+          ],
         ),
-        ElevatedButton(
-          onPressed: () => Navigator.pop(context, true),
-          child: const Text("削除"),
-        ),
-      ],
-    ),
   );
 }
 
@@ -529,11 +618,12 @@ Future<bool?> showCategoryDeleteDialog(
 /// generateQuizQuestions
 /// ─ quizPool（出題対象）と distractorPool（誤答候補）から、指定数のクイズ問題を生成する
 /// ---------------------------------------------------------------------------
-List<WordTestQuestion> generateQuizQuestions(
-    List<Product> quizPool, List<Product> distractorPool,
+List<WordTestQuestion> generateQuizQuestions(List<Product> quizPool,
+    List<Product> distractorPool,
     {int quizCount = 10}) {
   final random = Random();
-  final quizProducts = (List<Product>.from(quizPool)..shuffle(random))
+  final quizProducts = (List<Product>.from(quizPool)
+    ..shuffle(random))
       .take(min(quizCount, quizPool.length))
       .toList();
 
@@ -654,19 +744,6 @@ class Product {
 }
 
 /// ---------------------------------------------------------------------------
-/// productsProvider
-/// ─ アセットのJSONファイルから単語リストを非同期で読み込むProvider
-/// ---------------------------------------------------------------------------
-final productsProvider = FutureProvider<List<Product>>((ref) async {
-  final data = await rootBundle.loadString('assets/products.json');
-  final jsonResult = jsonDecode(data) as List;
-  return jsonResult.map((json) => Product.fromJson(json)).toList();
-});
-
-/// 検索クエリの状態を管理するProvider
-final searchQueryProvider = StateProvider<String>((ref) => '');
-
-/// ---------------------------------------------------------------------------
 /// SavedItemsNotifier
 /// ─ ユーザーが保存した単語の名前を管理し、SharedPreferences に保存する
 /// ---------------------------------------------------------------------------
@@ -704,14 +781,6 @@ class SavedItemsNotifier extends StateNotifier<List<String>> {
   }
 }
 
-final savedItemsProvider =
-    StateNotifierProvider<SavedItemsNotifier, List<String>>(
-  (ref) => SavedItemsNotifier(),
-);
-
-/// 非表示にした単語の名前を保持する Provider
-final hiddenSavedProvider = StateProvider<Set<String>>((ref) => {});
-
 /// ---------------------------------------------------------------------------
 /// Category クラス
 /// ─ ユーザーが登録するカテゴリー。各カテゴリーは名前と所属する単語の名前リストを保持します。
@@ -723,7 +792,8 @@ class Category {
   Category({required this.name, List<String>? products})
       : products = products ?? [];
 
-  Map<String, dynamic> toJson() => {
+  Map<String, dynamic> toJson() =>
+      {
         'name': name,
         'products': products,
       };
@@ -745,8 +815,8 @@ class CategoriesNotifier extends StateNotifier<List<Category>> {
     _loadCategories();
   }
 
-  Future<void> reorderProducts(
-      String categoryName, int oldIndex, int newIndex) async {
+  Future<void> reorderProducts(String categoryName, int oldIndex,
+      int newIndex) async {
     state = state.map((c) {
       if (c.name == categoryName) {
         List<String> newProducts = List.from(c.products);
@@ -806,8 +876,8 @@ class CategoriesNotifier extends StateNotifier<List<Category>> {
     await _saveCategories();
   }
 
-  Future<void> updateProductAssignment(
-      String categoryName, String productName, bool assigned) async {
+  Future<void> updateProductAssignment(String categoryName, String productName,
+      bool assigned) async {
     state = state.map((c) {
       if (c.name == categoryName) {
         List<String> updatedProducts = List.from(c.products);
@@ -825,10 +895,6 @@ class CategoriesNotifier extends StateNotifier<List<Category>> {
     await _saveCategories();
   }
 }
-
-final categoriesProvider =
-    StateNotifierProvider<CategoriesNotifier, List<Category>>(
-        (ref) => CategoriesNotifier());
 
 /// ---------------------------------------------------------------------------
 /// CategoryItemWidget
@@ -1055,7 +1121,7 @@ class CategoryItemsPageState extends ConsumerState<CategoryItemsPage> {
     // Riverpodから全カテゴリと全単語の状態を取得し、現在のカテゴリを特定
     final allCategories = ref.watch(categoriesProvider);
     final currentCategory = allCategories.firstWhere(
-      (cat) => cat.name == widget.category.name,
+          (cat) => cat.name == widget.category.name,
       orElse: () => widget.category,
     );
     final allProducts = ref.watch(allProductsProvider);
@@ -1087,8 +1153,8 @@ class CategoryItemsPageState extends ConsumerState<CategoryItemsPage> {
       body: filtered.isEmpty
           ? const Center(child: Text("このカテゴリーに単語はありません"))
           : _isSorting
-              ? _buildSortingList(filtered, categoryName) // 並び替えモード表示
-              : _buildNormalList(filtered, categoryName), // 通常リスト表示
+          ? _buildSortingList(filtered, categoryName) // 並び替えモード表示
+          : _buildNormalList(filtered, categoryName), // 通常リスト表示
     );
   }
 
@@ -1106,10 +1172,12 @@ class CategoryItemsPageState extends ConsumerState<CategoryItemsPage> {
           // 削除確認ダイアログの表示と結果による処理
           onConfirm: () async {
             return await showDialog<bool>(
-                  context: context,
-                  builder: (context) => AlertDialog(
+              context: context,
+              builder: (context) =>
+                  AlertDialog(
                     title: const Text("削除確認"),
-                    content: Text("${product.name} をカテゴリーから削除してよろしいですか？"),
+                    content: Text("${product
+                        .name} をカテゴリーから削除してよろしいですか？"),
                     actions: [
                       TextButton(
                         onPressed: () => Navigator.pop(context, false),
@@ -1121,7 +1189,7 @@ class CategoryItemsPageState extends ConsumerState<CategoryItemsPage> {
                       ),
                     ],
                   ),
-                ) ??
+            ) ??
                 false;
           },
           onDismissed: () async {
@@ -1156,11 +1224,12 @@ class CategoryItemsPageState extends ConsumerState<CategoryItemsPage> {
                           title: const Text("単語チェック問題に登録する"),
                           onTap: () {
                             final currentChecked =
-                                ref.read(checkedQuestionsProvider);
+                            ref.read(checkedQuestionsProvider);
                             if (currentChecked.contains(product.name)) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
-                                  content: Text("既に単語チェック問題に登録されています。"),
+                                  content: Text(
+                                      "既に単語チェック問題に登録されています。"),
                                 ),
                               );
                             } else {
@@ -1169,7 +1238,8 @@ class CategoryItemsPageState extends ConsumerState<CategoryItemsPage> {
                                   .add(product.name);
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
-                                  content: Text("単語チェック問題に登録しました。"),
+                                  content: Text(
+                                      "単語チェック問題に登録しました。"),
                                 ),
                               );
                             }
@@ -1194,7 +1264,8 @@ class CategoryItemsPageState extends ConsumerState<CategoryItemsPage> {
                             await ref
                                 .read(categoriesProvider.notifier)
                                 .updateProductAssignment(
-                                    categoryName, product.name, false);
+                                categoryName, product.name, false);
+                            if (!context.mounted) return;
                             Navigator.pop(context);
                           },
                         ),
@@ -1228,10 +1299,10 @@ class CategoryItemsPageState extends ConsumerState<CategoryItemsPage> {
       onReorder: (oldIndex, newIndex) async {
         if (newIndex > oldIndex) newIndex--;
         await ref.read(categoriesProvider.notifier).reorderProducts(
-              categoryName,
-              oldIndex,
-              newIndex,
-            );
+          categoryName,
+          oldIndex,
+          newIndex,
+        );
       },
       itemBuilder: (context, index) {
         final product = products[index];
@@ -1303,23 +1374,21 @@ class CheckedQuestionsNotifier extends StateNotifier<Set<String>> {
   }
 }
 
-/// Providerを通じて、アプリ内でチェックされた単語の状態を共有します。
-final checkedQuestionsProvider =
-    StateNotifierProvider<CheckedQuestionsNotifier, Set<String>>(
-        (ref) => CheckedQuestionsNotifier());
-
 /// ---------------------------------------------------------------------------
 /// アプリエントリーポイント：main() と MyApp
 /// ─────────────────────────────────────────────────────────
 /// Flutterの初期化とRiverpodのProviderScopeでアプリ全体をラップし、
 /// MyAppウィジェットを起動します。
 /// ---------------------------------------------------------------------------
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   runApp(
-    const ProviderScope(
-      child: MyApp(),
+    Phoenix(
+      child: const ProviderScope(
+        child: MyApp(),
+      ),
     ),
   );
 }
@@ -1377,7 +1446,7 @@ class CustomProductsNotifier extends StateNotifier<List<Product>> {
   Future<void> _loadCustomProducts() async {
     final prefs = await SharedPreferences.getInstance();
     final List<String>? productJsonList =
-        prefs.getStringList('custom_products');
+    prefs.getStringList('custom_products');
     if (productJsonList != null) {
       state = productJsonList.map((jsonStr) {
         final Map<String, dynamic> json = jsonDecode(jsonStr);
@@ -1393,39 +1462,16 @@ class CustomProductsNotifier extends StateNotifier<List<Product>> {
     final prefs = await SharedPreferences.getInstance();
     // 保存する際は、必要なプロパティのみエンコードする
     final productJsonList = state
-        .map((p) => jsonEncode({
-              'name': p.name,
-              'yomigana': p.yomigana,
-              'description': p.description,
-            }))
+        .map((p) =>
+        jsonEncode({
+          'name': p.name,
+          'yomigana': p.yomigana,
+          'description': p.description,
+        }))
         .toList();
     await prefs.setStringList('custom_products', productJsonList);
   }
 }
-
-/// プロバイダー定義：ユーザーが追加したカスタム単語を管理する
-final customProductsProvider =
-    StateNotifierProvider<CustomProductsNotifier, List<Product>>(
-        (ref) => CustomProductsNotifier());
-
-/// ---------------------------------------------------------------------------
-/// allProductsProvider
-/// ---------------------------------------------------------------------------
-/// アセット(JSON)からロードした単語とカスタム単語（ユーザー追加）を統合して返すシンプルなプロバイダー
-final allProductsProvider = Provider<List<Product>>((ref) {
-  final assetProductsAsync = ref.watch(productsProvider);
-  final customProducts = ref.watch(customProductsProvider);
-  List<Product> assetProducts = [];
-
-  // FutureProvider の状態に合わせてアセット単語リストを抽出
-  assetProductsAsync.when(
-    data: (products) => assetProducts = products,
-    loading: () {},
-    error: (_, __) {},
-  );
-  // 両方のリストを統合して返す
-  return [...assetProducts, ...customProducts];
-});
 
 /// ---------------------------------------------------------------------------
 /// SearchPage
@@ -1496,7 +1542,8 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                   if (currentChecked.contains(product.name)) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
-                        content: Text("既に単語チェック問題に登録されています。"),
+                        content: Text(
+                            "既に単語チェック問題に登録されています。"),
                       ),
                     );
                   } else {
@@ -1547,7 +1594,9 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                     return Container(
                       margin: EdgeInsets.all(context.paddingMedium),
                       decoration: BoxDecoration(
-                        color: Theme.of(context).cardColor,
+                        color: Theme
+                            .of(context)
+                            .cardColor,
                         borderRadius: BorderRadius.circular(16),
                         boxShadow: [
                           BoxShadow(
@@ -1593,7 +1642,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                                       child: Text("保存単語",
                                           style: TextStyle(
                                               fontSize:
-                                                  context.fontSizeMedium))),
+                                              context.fontSizeMedium))),
                                 ],
                               ),
                             ),
@@ -1606,7 +1655,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                                 context,
                                 MaterialPageRoute(
                                     builder: (_) =>
-                                        const CategorySelectionPage()),
+                                    const CategorySelectionPage()),
                               );
                             },
                             child: Container(
@@ -1621,7 +1670,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                                       child: Text("カテゴリーリスト",
                                           style: TextStyle(
                                               fontSize:
-                                                  context.fontSizeMedium))),
+                                              context.fontSizeMedium))),
                                 ],
                               ),
                             ),
@@ -1648,7 +1697,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                                       child: Text("単語テスト",
                                           style: TextStyle(
                                               fontSize:
-                                                  context.fontSizeMedium))),
+                                              context.fontSizeMedium))),
                                 ],
                               ),
                             ),
@@ -1661,7 +1710,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                                 context,
                                 MaterialPageRoute(
                                     builder: (_) =>
-                                        const CheckedQuestionsPage()),
+                                    const CheckedQuestionsPage()),
                               );
                             },
                             child: Container(
@@ -1677,7 +1726,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                                       child: Text("単語チェック問題",
                                           style: TextStyle(
                                               fontSize:
-                                                  context.fontSizeMedium))),
+                                              context.fontSizeMedium))),
                                 ],
                               ),
                             ),
@@ -1739,7 +1788,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                                       child: Text("単語一覧",
                                           style: TextStyle(
                                               fontSize:
-                                                  context.fontSizeMedium))),
+                                              context.fontSizeMedium))),
                                 ],
                               ),
                             ),
@@ -1770,17 +1819,21 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                     if (value.isNotEmpty) {
                       _cachedRandomProducts = null;
                     }
-                    ref.read(searchQueryProvider.notifier).state = value;
+                    ref
+                        .read(searchQueryProvider.notifier)
+                        .state = value;
                   },
                 ),
               ),
               productsAsync.when(
-                loading: () => Padding(
-                  padding:
+                loading: () =>
+                    Padding(
+                      padding:
                       EdgeInsets.symmetric(vertical: context.paddingMedium),
-                  child: const Center(child: CircularProgressIndicator()),
-                ),
-                error: (error, _) => Center(child: Text('データ読み込みエラー: $error')),
+                      child: const Center(child: CircularProgressIndicator()),
+                    ),
+                error: (error, _) =>
+                    Center(child: Text('データ読み込みエラー: $error')),
                 data: (products) {
                   List<Product> filteredProducts;
                   if (searchQuery.isNotEmpty) {
@@ -1800,8 +1853,9 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                   if (filteredProducts.isEmpty) {
                     return Padding(
                       padding:
-                          EdgeInsets.symmetric(vertical: context.paddingMedium),
-                      child: const Center(child: Text('一致する単語がありません')),
+                      EdgeInsets.symmetric(vertical: context.paddingMedium),
+                      child: const Center(
+                          child: Text('一致する単語がありません')),
                     );
                   }
                   return Column(
@@ -1868,7 +1922,8 @@ class _WordTestPageState extends ConsumerState<WordTestPage> {
       body: productsAsync.when(
         // データ読み込み中はプログレスインジケーターを表示
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, _) => Center(child: Text("データ読み込みエラー: $error")),
+        error: (error, _) =>
+            Center(child: Text("データ読み込みエラー: $error")),
         data: (products) {
           if (quiz.isEmpty) _generateQuiz(products);
           final currentQuestion = quiz[currentQuestionIndex];
@@ -1903,38 +1958,39 @@ class _WordTestPageState extends ConsumerState<WordTestPage> {
                   }
                   return Container(
                     margin:
-                        EdgeInsets.symmetric(vertical: context.paddingSmall),
+                    EdgeInsets.symmetric(vertical: context.paddingSmall),
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
                         backgroundColor: btnColor,
                       ),
                       onPressed: currentQuestion.userAnswer == null
                           ? () async {
-                              setState(() {
-                                currentQuestion.userAnswer = option;
-                              });
-                              // 正解でない場合、ミス回数もインクリメント
-                              if (!currentQuestion.isCorrect) {
-                                ref
-                                    .read(mistakeCountsProvider.notifier)
-                                    .increment(currentQuestion.product.name);
-                              }
-                              // 1秒後に次の問題または結果画面へ遷移
-                              await Future.delayed(const Duration(seconds: 1));
-                              if (currentQuestionIndex < quiz.length - 1) {
-                                setState(() {
-                                  currentQuestionIndex++;
-                                });
-                              } else {
-                                Navigator.pushReplacement(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (_) =>
-                                        WordTestResultPage(quiz: quiz),
-                                  ),
-                                );
-                              }
-                            }
+                        setState(() {
+                          currentQuestion.userAnswer = option;
+                        });
+                        // 正解でない場合、ミス回数もインクリメント
+                        if (!currentQuestion.isCorrect) {
+                          ref
+                              .read(mistakeCountsProvider.notifier)
+                              .increment(currentQuestion.product.name);
+                        }
+                        // 1秒後に次の問題または結果画面へ遷移
+                        await Future.delayed(const Duration(seconds: 1));
+                        if (currentQuestionIndex < quiz.length - 1) {
+                          setState(() {
+                            currentQuestionIndex++;
+                          });
+                        } else {
+                          if (!context.mounted) return;
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) =>
+                                  WordTestResultPage(quiz: quiz),
+                            ),
+                          );
+                        }
+                      }
                           : null,
                       child: Text(
                         option,
@@ -1953,7 +2009,7 @@ class _WordTestPageState extends ConsumerState<WordTestPage> {
                     style: TextStyle(
                       fontSize: context.fontSizeMedium,
                       color:
-                          currentQuestion.isCorrect ? Colors.green : Colors.red,
+                      currentQuestion.isCorrect ? Colors.green : Colors.red,
                     ),
                     textAlign: TextAlign.center,
                   ),
@@ -1988,7 +2044,9 @@ class WordTestResultPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     // 正解数を集計
-    int correctCount = quiz.where((q) => q.isCorrect).length;
+    int correctCount = quiz
+        .where((q) => q.isCorrect)
+        .length;
     return Scaffold(
       appBar: AppBar(
         title: const Text("テスト結果"),
@@ -2011,7 +2069,7 @@ class WordTestResultPage extends ConsumerWidget {
             Expanded(
               child: ListView.separated(
                 separatorBuilder: (context, index) =>
-                    const SizedBox(height: 16),
+                const SizedBox(height: 16),
                 itemCount: quiz.length,
                 itemBuilder: (context, index) {
                   final question = quiz[index];
@@ -2028,21 +2086,21 @@ class WordTestResultPage extends ConsumerWidget {
                             borderRadius: BorderRadius.circular(20),
                             gradient: question.isCorrect
                                 ? const LinearGradient(
-                                    colors: [
-                                      Color(0xFFE8F5E9),
-                                      Color(0xFFC8E6C9)
-                                    ],
-                                    begin: Alignment.topLeft,
-                                    end: Alignment.bottomRight,
-                                  )
+                              colors: [
+                                Color(0xFFE8F5E9),
+                                Color(0xFFC8E6C9)
+                              ],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            )
                                 : const LinearGradient(
-                                    colors: [
-                                      Color(0xFFFFEBEE),
-                                      Color(0xFFFFCDD2)
-                                    ],
-                                    begin: Alignment.topLeft,
-                                    end: Alignment.bottomRight,
-                                  ),
+                              colors: [
+                                Color(0xFFFFEBEE),
+                                Color(0xFFFFCDD2)
+                              ],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
                           ),
                           padding: EdgeInsets.all(context.paddingSmall),
                           child: Column(
@@ -2061,7 +2119,7 @@ class WordTestResultPage extends ConsumerWidget {
                               Text(
                                 question.product.description,
                                 style:
-                                    TextStyle(fontSize: context.fontSizeSmall),
+                                TextStyle(fontSize: context.fontSizeSmall),
                               ),
                               const SizedBox(height: 12),
                               // ユーザーの回答が正解か不正解かを表示するラベル
@@ -2147,28 +2205,31 @@ class WordTestResultPage extends ConsumerWidget {
                                       final allProducts = await ref
                                           .read(productsProvider.future);
                                       final optionProduct =
-                                          allProducts.firstWhere(
-                                        (p) => p.name == option,
-                                        orElse: () => Product(
-                                            name: option,
-                                            yomigana: "",
-                                            description: "説明がありません",
-                                            category: ''),
+                                      allProducts.firstWhere(
+                                            (p) => p.name == option,
+                                        orElse: () =>
+                                            Product(
+                                                name: option,
+                                                yomigana: "",
+                                                description: "説明がありません",
+                                                category: ''),
                                       );
+                                      if (!context.mounted) return;
                                       showDialog(
                                         context: context,
-                                        builder: (_) => AlertDialog(
-                                          title: Text(option),
-                                          content:
+                                        builder: (_) =>
+                                            AlertDialog(
+                                              title: Text(option),
+                                              content:
                                               Text(optionProduct.description),
-                                          actions: [
-                                            TextButton(
-                                              onPressed: () =>
-                                                  Navigator.pop(context),
-                                              child: const Text("閉じる"),
+                                              actions: [
+                                                TextButton(
+                                                  onPressed: () =>
+                                                      Navigator.pop(context),
+                                                  child: const Text("閉じる"),
+                                                ),
+                                              ],
                                             ),
-                                          ],
-                                        ),
                                       );
                                     },
                                   );
@@ -2178,7 +2239,7 @@ class WordTestResultPage extends ConsumerWidget {
                               // 累計ミス回数を表示（フィードバック用）
                               Consumer(builder: (context, ref, child) {
                                 final mistakeCounts =
-                                    ref.watch(mistakeCountsProvider);
+                                ref.watch(mistakeCountsProvider);
                                 final mistakeCount =
                                     mistakeCounts[question.product.name] ?? 0;
                                 return Text(
@@ -2325,13 +2386,13 @@ class CheckedQuestionsPageState extends ConsumerState<CheckedQuestionsPage> {
               ),
               onPressed: checked.isNotEmpty
                   ? () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const CheckboxTestPage(),
-                        ),
-                      );
-                    }
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const CheckboxTestPage(),
+                  ),
+                );
+              }
                   : null,
               child: Text("問題出題",
                   style: TextStyle(fontSize: context.fontSizeExtraLarge)),
@@ -2344,12 +2405,14 @@ class CheckedQuestionsPageState extends ConsumerState<CheckedQuestionsPage> {
               padding: EdgeInsets.all(context.paddingExtraSmall),
               child: productsAsync.when(
                 loading: () => const Center(child: CircularProgressIndicator()),
-                error: (error, _) => Center(child: Text("データ読み込みエラー: $error")),
+                error: (error, _) =>
+                    Center(child: Text("データ読み込みエラー: $error")),
                 data: (products) {
                   final filtered =
-                      products.where((p) => checked.contains(p.name)).toList();
+                  products.where((p) => checked.contains(p.name)).toList();
                   if (filtered.isEmpty) {
-                    return const Center(child: Text("チェックされた問題はありません"));
+                    return const Center(
+                        child: Text("チェックされた問題はありません"));
                   }
                   if (_isSorting) {
                     _sortedProducts ??= List<Product>.from(filtered);
@@ -2382,11 +2445,13 @@ class CheckedQuestionsPageState extends ConsumerState<CheckedQuestionsPage> {
                           // スワイプで単語を削除する際に確認ダイアログを表示する
                           onConfirm: () async {
                             return await showDialog<bool>(
-                                  context: context,
-                                  builder: (context) => AlertDialog(
+                              context: context,
+                              builder: (context) =>
+                                  AlertDialog(
                                     title: const Text("削除確認"),
                                     content:
-                                        Text("${product.name} を削除してよろしいですか？"),
+                                    Text("${product
+                                        .name} を削除してよろしいですか？"),
                                     actions: [
                                       TextButton(
                                         onPressed: () =>
@@ -2400,7 +2465,7 @@ class CheckedQuestionsPageState extends ConsumerState<CheckedQuestionsPage> {
                                       ),
                                     ],
                                   ),
-                                ) ??
+                            ) ??
                                 false;
                           },
                           onDismissed: () async {
@@ -2460,6 +2525,7 @@ class CheckedQuestionsPageState extends ConsumerState<CheckedQuestionsPage> {
                   await ref
                       .read(checkedQuestionsProvider.notifier)
                       .remove(product.name);
+                  if (!context.mounted) return;
                   Navigator.pop(context);
                 },
               ),
@@ -2506,7 +2572,7 @@ class _CheckboxTestPageState extends ConsumerState<CheckboxTestPage> {
   /// チェック済み単語だけを抽出し、そこからランダムに quizCount 問のクイズ問題を作成する。
   void _generateQuiz(List<Product> products, Set<String> checked) {
     final filteredProducts =
-        products.where((p) => checked.contains(p.name)).toList();
+    products.where((p) => checked.contains(p.name)).toList();
     if (filteredProducts.isEmpty) return; // チェック済みがなければ何も生成しない
     quiz = generateQuizQuestions(filteredProducts, products, quizCount: 10);
     currentQuestionIndex = 0;
@@ -2524,7 +2590,8 @@ class _CheckboxTestPageState extends ConsumerState<CheckboxTestPage> {
       ),
       body: productsAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, _) => Center(child: Text("データ読み込みエラー: $error")),
+        error: (error, _) =>
+            Center(child: Text("データ読み込みエラー: $error")),
         data: (products) {
           // クイズ問題が空の場合、チェック済み商品から問題を生成
           if (quiz.isEmpty) _generateQuiz(products, checked);
@@ -2564,46 +2631,48 @@ class _CheckboxTestPageState extends ConsumerState<CheckboxTestPage> {
                   }
                   return Container(
                     margin:
-                        EdgeInsets.symmetric(vertical: context.paddingSmall),
+                    EdgeInsets.symmetric(vertical: context.paddingSmall),
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
                         backgroundColor: btnColor,
                       ),
                       onPressed: currentQuestion.userAnswer == null
                           ? () async {
-                              // すでに処理済みであれば何もしない
-                              if (_isAnswered) return;
-                              _isAnswered = true; // 以降のタップをブロック
+                        // すでに処理済みであれば何もしない
+                        if (_isAnswered) return;
+                        _isAnswered = true; // 以降のタップをブロック
 
-                              // ユーザーが選択肢をタップした時の処理
-                              setState(() {
-                                currentQuestion.userAnswer = option;
-                              });
-                              // 不正解の場合、ミス回数をカウントアップ
-                              if (!currentQuestion.isCorrect) {
-                                await ref
-                                    .read(mistakeCountsProvider.notifier)
-                                    .increment(currentQuestion.product.name);
-                              }
-                              // 1秒後に次の問題へ遷移。最後なら結果画面へ
-                              await Future.delayed(const Duration(seconds: 1));
-                              if (currentQuestionIndex < quiz.length - 1) {
-                                setState(() {
-                                  currentQuestionIndex++;
-                                  _isAnswered = false; // 次の問題開始時にリセット
-                                });
-                              } else {
-                                Navigator.pushReplacement(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (_) => WordTestResultPage(
-                                      quiz: quiz,
-                                      isCheckboxTest: true,
-                                    ),
+                        // ユーザーが選択肢をタップした時の処理
+                        setState(() {
+                          currentQuestion.userAnswer = option;
+                        });
+                        // 不正解の場合、ミス回数をカウントアップ
+                        if (!currentQuestion.isCorrect) {
+                          await ref
+                              .read(mistakeCountsProvider.notifier)
+                              .increment(currentQuestion.product.name);
+                        }
+                        // 1秒後に次の問題へ遷移。最後なら結果画面へ
+                        await Future.delayed(const Duration(seconds: 1));
+                        if (currentQuestionIndex < quiz.length - 1) {
+                          setState(() {
+                            currentQuestionIndex++;
+                            _isAnswered = false; // 次の問題開始時にリセット
+                          });
+                        } else {
+                          if (!context.mounted) return;
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) =>
+                                  WordTestResultPage(
+                                    quiz: quiz,
+                                    isCheckboxTest: true,
                                   ),
-                                );
-                              }
-                            }
+                            ),
+                          );
+                        }
+                      }
                           : null,
                       child: Text(
                         option,
@@ -2622,7 +2691,7 @@ class _CheckboxTestPageState extends ConsumerState<CheckboxTestPage> {
                     style: TextStyle(
                       fontSize: context.fontSizeMedium,
                       color:
-                          currentQuestion.isCorrect ? Colors.green : Colors.red,
+                      currentQuestion.isCorrect ? Colors.green : Colors.red,
                     ),
                     textAlign: TextAlign.center,
                   ),
@@ -2657,7 +2726,8 @@ class SavedItemsPage extends ConsumerWidget {
       ),
       body: productsAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, _) => Center(child: Text('データ読み込みエラー: $error')),
+        error: (error, _) =>
+            Center(child: Text('データ読み込みエラー: $error')),
         data: (allProducts) {
           // 保存済みの商品名リストから Product オブジェクトを抽出
           final savedProducts = savedItems
@@ -2672,10 +2742,12 @@ class SavedItemsPage extends ConsumerWidget {
                 keyValue: ValueKey(product.name),
                 onConfirm: () async {
                   return await showDialog<bool>(
-                        context: context,
-                        builder: (context) => AlertDialog(
+                    context: context,
+                    builder: (context) =>
+                        AlertDialog(
                           title: const Text("削除確認"),
-                          content: Text("${product.name} を削除してよろしいですか？"),
+                          content: Text(
+                              "${product.name} を削除してよろしいですか？"),
                           actions: [
                             TextButton(
                               onPressed: () => Navigator.pop(context, false),
@@ -2687,7 +2759,7 @@ class SavedItemsPage extends ConsumerWidget {
                             ),
                           ],
                         ),
-                      ) ??
+                  ) ??
                       false;
                 },
                 onDismissed: () async {
@@ -2700,49 +2772,59 @@ class SavedItemsPage extends ConsumerWidget {
                     // 長押し時はカテゴリー割当ウィジェット表示などを実行
                     showModalBottomSheet(
                       context: context,
-                      builder: (context) => SafeArea(
-                        child: Wrap(
-                          children: [
-                            ListTile(
-                              leading: const Icon(Icons.bookmark),
-                              title: const Text("保存する"),
-                              onTap: () {
-                                Navigator.pop(context);
-                                showModalBottomSheet(
-                                  context: context,
-                                  builder: (context) =>
-                                      CategoryAssignmentSheet(product: product),
-                                );
-                              },
-                            ),
-                            ListTile(
-                              leading: const Icon(Icons.check_box),
-                              title: const Text("単語チェック問題に登録する"),
-                              onTap: () {
-                                final currentChecked =
+                      builder: (context) =>
+                          SafeArea(
+                            child: Wrap(
+                              children: [
+                                ListTile(
+                                  leading: const Icon(Icons.bookmark),
+                                  title: const Text("保存する"),
+                                  onTap: () {
+                                    Navigator.pop(context);
+                                    showModalBottomSheet(
+                                      context: context,
+                                      builder: (context) =>
+                                          CategoryAssignmentSheet(
+                                              product: product),
+                                    );
+                                  },
+                                ),
+                                ListTile(
+                                  leading: const Icon(Icons.check_box),
+                                  title: const Text(
+                                      "単語チェック問題に登録する"),
+                                  onTap: () {
+                                    final currentChecked =
                                     ref.read(checkedQuestionsProvider);
-                                if (currentChecked.contains(product.name)) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text("既に単語チェック問題に登録されています。"),
-                                    ),
-                                  );
-                                } else {
-                                  ref
-                                      .read(checkedQuestionsProvider.notifier)
-                                      .add(product.name);
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text("単語チェック問題に登録しました。"),
-                                    ),
-                                  );
-                                }
-                                Navigator.pop(context);
-                              },
+                                    if (currentChecked.contains(product.name)) {
+                                      ScaffoldMessenger
+                                          .of(context)
+                                          .showSnackBar(
+                                        const SnackBar(
+                                          content: Text(
+                                              "既に単語チェック問題に登録されています。"),
+                                        ),
+                                      );
+                                    } else {
+                                      ref
+                                          .read(
+                                          checkedQuestionsProvider.notifier)
+                                          .add(product.name);
+                                      ScaffoldMessenger
+                                          .of(context)
+                                          .showSnackBar(
+                                        const SnackBar(
+                                          content: Text(
+                                              "単語チェック問題に登録しました。"),
+                                        ),
+                                      );
+                                    }
+                                    Navigator.pop(context);
+                                  },
+                                ),
+                              ],
                             ),
-                          ],
-                        ),
-                      ),
+                          ),
                     );
                   },
                   child: ProductCard(
@@ -2795,12 +2877,13 @@ class SavedItemsPageState extends ConsumerState<SavedItemsPage> {
         padding: EdgeInsets.all(context.paddingMedium),
         child: productsAsync.when(
           loading: () => const Center(child: CircularProgressIndicator()),
-          error: (error, _) => Center(child: Text('データ読み込みエラー: $error')),
+          error: (error, _) =>
+              Center(child: Text('データ読み込みエラー: $error')),
           data: (products) {
             final savedProducts = savedItems
                 .where((itemName) => products.any((p) => p.name == itemName))
                 .map((itemName) =>
-                    products.firstWhere((p) => p.name == itemName))
+                products.firstWhere((p) => p.name == itemName))
                 .toList();
             if (savedProducts.isEmpty) {
               return const Center(child: Text('保存された単語はありません'));
@@ -2849,7 +2932,8 @@ class SavedItemsPageState extends ConsumerState<SavedItemsPage> {
                         builder: (context) {
                           return AlertDialog(
                             title: const Text("削除確認"),
-                            content: Text("${product.name} を削除してよろしいですか？"),
+                            content: Text(
+                                "${product.name} を削除してよろしいですか？"),
                             actions: [
                               TextButton(
                                 onPressed: () => Navigator.pop(context, false),
@@ -2893,28 +2977,31 @@ class SavedItemsPageState extends ConsumerState<SavedItemsPage> {
                                   ),
                                   ListTile(
                                     leading: const Icon(Icons.check_box),
-                                    title: const Text("単語チェック問題に登録する"),
+                                    title: const Text(
+                                        "単語チェック問題に登録する"),
                                     onTap: () {
                                       final currentChecked =
-                                          ref.read(checkedQuestionsProvider);
+                                      ref.read(checkedQuestionsProvider);
                                       if (currentChecked
                                           .contains(product.name)) {
                                         ScaffoldMessenger.of(context)
                                             .showSnackBar(
                                           const SnackBar(
                                               content:
-                                                  Text("既に単語チェック問題に登録されています。")),
+                                              Text(
+                                                  "既に単語チェック問題に登録されています。")),
                                         );
                                       } else {
                                         ref
                                             .read(checkedQuestionsProvider
-                                                .notifier)
+                                            .notifier)
                                             .add(product.name);
                                         ScaffoldMessenger.of(context)
                                             .showSnackBar(
                                           const SnackBar(
                                               content:
-                                                  Text("単語チェック問題に登録しました。")),
+                                              Text(
+                                                  "単語チェック問題に登録しました。")),
                                         );
                                       }
                                       Navigator.pop(context);
@@ -2937,6 +3024,7 @@ class SavedItemsPageState extends ConsumerState<SavedItemsPage> {
                                       await ref
                                           .read(savedItemsProvider.notifier)
                                           .removeItem(product.name);
+                                      if (!context.mounted) return;
                                       Navigator.pop(context);
                                     },
                                   ),
@@ -3040,10 +3128,12 @@ class CategorySelectionPageState extends ConsumerState<CategorySelectionPage> {
             // スワイプしたときに削除確認ダイアログを表示
             onConfirm: () async {
               return await showDialog<bool>(
-                    context: context,
-                    builder: (context) => AlertDialog(
+                context: context,
+                builder: (context) =>
+                    AlertDialog(
                       title: const Text("削除確認"),
-                      content: Text("カテゴリー『${cat.name}』を削除してよろしいですか？"),
+                      content: Text(
+                          "カテゴリー『${cat.name}』を削除してよろしいですか？"),
                       actions: [
                         TextButton(
                           onPressed: () => Navigator.pop(context, false),
@@ -3055,7 +3145,7 @@ class CategorySelectionPageState extends ConsumerState<CategorySelectionPage> {
                         ),
                       ],
                     ),
-                  ) ??
+              ) ??
                   false;
             },
             // スワイプ後にカテゴリーを削除する
@@ -3143,20 +3233,22 @@ class CategorySelectionPageState extends ConsumerState<CategorySelectionPage> {
                   Navigator.pop(context);
                   bool? confirm = await showDialog<bool>(
                     context: context,
-                    builder: (context) => AlertDialog(
-                      title: const Text("リスト削除"),
-                      content: Text("カテゴリー『${cat.name}』を削除してよろしいですか？"),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(context, false),
-                          child: const Text("キャンセル"),
+                    builder: (context) =>
+                        AlertDialog(
+                          title: const Text("リスト削除"),
+                          content: Text("カテゴリー『${cat
+                              .name}』を削除してよろしいですか？"),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(context, false),
+                              child: const Text("キャンセル"),
+                            ),
+                            ElevatedButton(
+                              onPressed: () => Navigator.pop(context, true),
+                              child: const Text("削除"),
+                            ),
+                          ],
                         ),
-                        ElevatedButton(
-                          onPressed: () => Navigator.pop(context, true),
-                          child: const Text("削除"),
-                        ),
-                      ],
-                    ),
                   );
                   if (confirm == true) {
                     await ref
@@ -3186,7 +3278,7 @@ class CategorySelectionPageState extends ConsumerState<CategorySelectionPage> {
   /// カテゴリー名の変更用ダイアログを表示し、入力された新しい名前で更新する処理
   void _showRenameCategoryDialog(Category cat) {
     final TextEditingController controller =
-        TextEditingController(text: cat.name);
+    TextEditingController(text: cat.name);
     showDialog(
       context: context,
       builder: (context) {
@@ -3209,6 +3301,7 @@ class CategorySelectionPageState extends ConsumerState<CategorySelectionPage> {
                       .read(categoriesProvider.notifier)
                       .updateCategory(cat.name, newName);
                 }
+                if (!context.mounted) return;
                 Navigator.pop(context);
               },
               child: const Text("変更"),
@@ -3352,10 +3445,10 @@ class CategoryAssignmentSheetState
                   await ref
                       .read(categoriesProvider.notifier)
                       .updateProductAssignment(
-                        entry.key,
-                        widget.product.name,
-                        entry.value,
-                      );
+                    entry.key,
+                    widget.product.name,
+                    entry.value,
+                  );
                 }
 
                 // 保存状態についても、該当プロバイダーに反映する
@@ -3368,6 +3461,7 @@ class CategoryAssignmentSheetState
                       .read(savedItemsProvider.notifier)
                       .removeItem(widget.product.name);
                 }
+                if (!context.mounted) return;
                 Navigator.pop(context);
               },
               child: Text(
@@ -3409,20 +3503,24 @@ class AddItemToCategoryDialog extends ConsumerWidget {
       content: Autocomplete<String>(
         // 入力に応じた候補リストを生成
         optionsBuilder: (TextEditingValue textEditingValue) {
-          if (textEditingValue.text.trim().isEmpty) {
+          if (textEditingValue.text
+              .trim()
+              .isEmpty) {
             return availableOptions;
           }
-          return availableOptions.where((option) => option
-              .toLowerCase()
-              .contains(textEditingValue.text.toLowerCase()));
+          return availableOptions.where((option) =>
+              option
+                  .toLowerCase()
+                  .contains(textEditingValue.text.toLowerCase()));
         },
         // ユーザーが候補を選択したとき：該当商品のカテゴリ割当を更新しダイアログを閉じる
         onSelected: (String selected) async {
           await ref.read(categoriesProvider.notifier).updateProductAssignment(
-                category.name,
-                selected,
-                true,
-              );
+            category.name,
+            selected,
+            true,
+          );
+          if (!context.mounted) return;
           Navigator.of(context).pop();
         },
         fieldViewBuilder: (context, controller, focusNode, onEditingComplete) {
@@ -3550,12 +3648,6 @@ class MistakeCountNotifier extends StateNotifier<Map<String, int>> {
   }
 }
 
-// プロバイダー定義：アプリ全体でミス回数の状態を共有するための Provider
-final mistakeCountsProvider =
-    StateNotifierProvider<MistakeCountNotifier, Map<String, int>>(
-  (ref) => MistakeCountNotifier(),
-);
-
 class WordListPage extends ConsumerStatefulWidget {
   const WordListPage({super.key});
 
@@ -3578,11 +3670,12 @@ class WordListPageState extends ConsumerState<WordListPage> {
       ),
       body: productsAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, _) => Center(child: Text('データ読み込みエラー: $error')),
+        error: (error, _) =>
+            Center(child: Text('データ読み込みエラー: $error')),
         data: (products) {
           // すべてのカテゴリ情報を抽出
           final Set<String> categorySet =
-              products.map((p) => p.category).toSet();
+          products.map((p) => p.category).toSet();
           final List<String> categories = ['全て', ...categorySet];
 
           // 選択されたカテゴリによって商品のリストをフィルタリング
@@ -3653,24 +3746,27 @@ class WordListPageState extends ConsumerState<WordListPage> {
                                   ),
                                   ListTile(
                                     leading: const Icon(Icons.check_box),
-                                    title: const Text("単語チェック問題に登録する"),
+                                    title: const Text(
+                                        "単語チェック問題に登録する"),
                                     onTap: () {
                                       final currentChecked =
-                                          ref.read(checkedQuestionsProvider);
+                                      ref.read(checkedQuestionsProvider);
                                       if (currentChecked
                                           .contains(product.name)) {
                                         ScaffoldMessenger.of(context)
                                             .showSnackBar(const SnackBar(
-                                          content: Text("既に単語チェック問題に登録されています。"),
+                                          content: Text(
+                                              "既に単語チェック問題に登録されています。"),
                                         ));
                                       } else {
                                         ref
                                             .read(checkedQuestionsProvider
-                                                .notifier)
+                                            .notifier)
                                             .add(product.name);
                                         ScaffoldMessenger.of(context)
                                             .showSnackBar(const SnackBar(
-                                          content: Text("単語チェック問題に登録しました。"),
+                                          content: Text(
+                                              "単語チェック問題に登録しました。"),
                                         ));
                                       }
                                       Navigator.pop(context);
@@ -3788,19 +3884,6 @@ class SortingProblem {
 }
 
 // ============================================================================
-// sortingProblemsProvider
-// -----------------------------------------------------------------------------
-// この FutureProvider は、assets/siwake.json から仕訳問題のリストを非同期
-// で読み込み、SortingProblem インスタンスのリストとして返します。
-// ============================================================================
-final sortingProblemsProvider =
-    FutureProvider<List<SortingProblem>>((ref) async {
-  final data = await rootBundle.loadString('assets/siwake.json');
-  final List<dynamic> jsonResult = jsonDecode(data);
-  return jsonResult.map((json) => SortingProblem.fromJson(json)).toList();
-});
-
-// ============================================================================
 // JournalEntryQuizWidget
 // -----------------------------------------------------------------------------
 // JournalEntryQuizWidget は、仕訳問題のクイズ画面として使用されるウィジェットです。
@@ -3902,7 +3985,9 @@ class _JournalEntryQuizWidgetState extends State<JournalEntryQuizWidget> {
     // 借方の各エントリーが入力済みかどうかチェック
     for (int i = 0; i < userDebitAccounts.length; i++) {
       if (userDebitAccounts[i] == null ||
-          debitAmountControllers[i].text.trim().isEmpty) {
+          debitAmountControllers[i].text
+              .trim()
+              .isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text("借方のすべての項目を選択してください")),
         );
@@ -3913,7 +3998,9 @@ class _JournalEntryQuizWidgetState extends State<JournalEntryQuizWidget> {
     // 貸方の各エントリーについてもチェック
     for (int i = 0; i < userCreditAccounts.length; i++) {
       if (userCreditAccounts[i] == null ||
-          creditAmountControllers[i].text.trim().isEmpty) {
+          creditAmountControllers[i].text
+              .trim()
+              .isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text("貸方のすべての項目を選択してください")),
         );
@@ -3959,16 +4046,18 @@ class _JournalEntryQuizWidgetState extends State<JournalEntryQuizWidget> {
 
     // 正解の借方・貸方リストも Map の形に変換
     List<Map<String, dynamic>> correctDebitList = debitAnswers
-        .map((entry) => {
-              'account': entry.account,
-              'amount': entry.amount,
-            })
+        .map((entry) =>
+    {
+      'account': entry.account,
+      'amount': entry.amount,
+    })
         .toList();
     List<Map<String, dynamic>> correctCreditList = creditAnswers
-        .map((entry) => {
-              'account': entry.account,
-              'amount': entry.amount,
-            })
+        .map((entry) =>
+    {
+      'account': entry.account,
+      'amount': entry.amount,
+    })
         .toList();
 
     // 借方と貸方それぞれの正誤判定
@@ -3989,13 +4078,13 @@ class _JournalEntryQuizWidgetState extends State<JournalEntryQuizWidget> {
   // 2 つの Map のリストが同一内容かどうかを比較します。
   // 順序は問いませんが、各要素（勘定科目と金額の組）が同じであれば true を返します。
   // ========================================================================
-  bool _isListEqual(
-      List<Map<String, dynamic>> list1, List<Map<String, dynamic>> list2) {
+  bool _isListEqual(List<Map<String, dynamic>> list1,
+      List<Map<String, dynamic>> list2) {
     if (list1.length != list2.length) return false;
     List<Map<String, dynamic>> temp = List.from(list2);
     for (var item in list1) {
       int index = temp.indexWhere((e) =>
-          e['account'] == item['account'] && e['amount'] == item['amount']);
+      e['account'] == item['account'] && e['amount'] == item['amount']);
       if (index == -1) {
         return false;
       } else {
@@ -4038,18 +4127,19 @@ class _JournalEntryQuizWidgetState extends State<JournalEntryQuizWidget> {
             isExpanded: true,
             // ユーザーが選択可能な勘定科目一覧（共通候補リスト）
             items: commonAccountOptions
-                .map((account) => DropdownMenuItem(
-                      value: account,
-                      child: FittedBox(
-                        fit: BoxFit.scaleDown,
-                        alignment: Alignment.centerLeft,
-                        child: Text(
-                          account,
-                          style: TextStyle(fontSize: context.fontSizeMedium),
-                          maxLines: 1,
-                        ),
-                      ),
-                    ))
+                .map((account) =>
+                DropdownMenuItem(
+                  value: account,
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      account,
+                      style: TextStyle(fontSize: context.fontSizeMedium),
+                      maxLines: 1,
+                    ),
+                  ),
+                ))
                 .toList(),
             onChanged: (val) {
               setState(() {
@@ -4073,10 +4163,10 @@ class _JournalEntryQuizWidgetState extends State<JournalEntryQuizWidget> {
                 icon: const Icon(Icons.calculate),
                 onPressed: () async {
                   double initialValue = double.tryParse(
-                          debitAmountControllers[index]
-                              .text
-                              .replaceAll(',', '')
-                              .trim()) ??
+                      debitAmountControllers[index]
+                          .text
+                          .replaceAll(',', '')
+                          .trim()) ??
                       0;
                   final result = await showModalBottomSheet<double>(
                     context: context,
@@ -4130,18 +4220,19 @@ class _JournalEntryQuizWidgetState extends State<JournalEntryQuizWidget> {
             value: userCreditAccounts[index],
             isExpanded: true,
             items: commonAccountOptions
-                .map((account) => DropdownMenuItem(
-                      value: account,
-                      child: FittedBox(
-                        fit: BoxFit.scaleDown,
-                        alignment: Alignment.centerLeft,
-                        child: Text(
-                          account,
-                          maxLines: 1,
-                          style: TextStyle(fontSize: context.fontSizeMedium),
-                        ),
-                      ),
-                    ))
+                .map((account) =>
+                DropdownMenuItem(
+                  value: account,
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      account,
+                      maxLines: 1,
+                      style: TextStyle(fontSize: context.fontSizeMedium),
+                    ),
+                  ),
+                ))
                 .toList(),
             onChanged: (val) {
               setState(() {
@@ -4164,10 +4255,10 @@ class _JournalEntryQuizWidgetState extends State<JournalEntryQuizWidget> {
                 icon: const Icon(Icons.calculate),
                 onPressed: () async {
                   double initialValue = double.tryParse(
-                          creditAmountControllers[index]
-                              .text
-                              .replaceAll(',', '')
-                              .trim()) ??
+                      creditAmountControllers[index]
+                          .text
+                          .replaceAll(',', '')
+                          .trim()) ??
                       0;
                   final result = await showModalBottomSheet<double>(
                     context: context,
@@ -4217,7 +4308,7 @@ class _JournalEntryQuizWidgetState extends State<JournalEntryQuizWidget> {
                   // 借方入力フィールド群の生成
                   Column(
                     children: List.generate(debitAnswers.length,
-                        (index) => _buildDebitEntry(index)),
+                            (index) => _buildDebitEntry(index)),
                   ),
                 ],
               ),
@@ -4235,7 +4326,7 @@ class _JournalEntryQuizWidgetState extends State<JournalEntryQuizWidget> {
                   // 貸方入力フィールド群の生成
                   Column(
                     children: List.generate(creditAnswers.length,
-                        (index) => _buildCreditEntry(index)),
+                            (index) => _buildCreditEntry(index)),
                   ),
                 ],
               ),
@@ -4277,7 +4368,8 @@ class _JournalEntryQuizWidgetState extends State<JournalEntryQuizWidget> {
                 ...creditAnswers
                     .map((entry) => Text("${entry.account}  ¥${entry.amount}")),
                 const SizedBox(height: 12),
-                const Text("解説", style: TextStyle(fontWeight: FontWeight.bold)),
+                const Text(
+                    "解説", style: TextStyle(fontWeight: FontWeight.bold)),
                 Text(widget.problem.feedback),
               ],
             ),
@@ -4286,9 +4378,9 @@ class _JournalEntryQuizWidgetState extends State<JournalEntryQuizWidget> {
         ElevatedButton(
           onPressed: isAnswerCorrect == null
               ? () {
-                  FocusScope.of(context).unfocus();
-                  submitAnswer();
-                }
+            FocusScope.of(context).unfocus();
+            submitAnswer();
+          }
               : null,
           style: ElevatedButton.styleFrom(
             padding: EdgeInsets.symmetric(vertical: context.paddingMedium),
@@ -4520,7 +4612,7 @@ class CommonProductListView extends StatelessWidget {
     this.isReorderable = false,
     this.onReorder,
   }) : assert(!isReorderable || onReorder != null,
-            'Reorderable の場合、onReorder コールバックは必須です。');
+  'Reorderable の場合、onReorder コールバックは必須です。');
 
   @override
   Widget build(BuildContext context) {
@@ -4577,14 +4669,15 @@ class WordSearchPage extends ConsumerWidget {
       ),
       body: productsAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, _) => Center(child: Text('データ読み込みエラー: $error')),
+        error: (error, _) =>
+            Center(child: Text('データ読み込みエラー: $error')),
         data: (products) {
           final filteredProducts = (searchQuery.isNotEmpty)
               ? products.where((p) {
-                  final query = searchQuery.toLowerCase();
-                  return p.name.toLowerCase().contains(query) ||
-                      p.yomigana.toLowerCase().contains(query);
-                }).toList()
+            final query = searchQuery.toLowerCase();
+            return p.name.toLowerCase().contains(query) ||
+                p.yomigana.toLowerCase().contains(query);
+          }).toList()
               : products;
 
           return CommonProductListView(
@@ -4649,29 +4742,29 @@ class SettingsPage extends StatelessWidget {
             },
           ),
 
-          ListTile(
-            leading: const Icon(Icons.notifications),
-            title: const Text("通知"),
-            trailing: Switch(
-              value: true, // これはプレースホルダです。通知の有効／無効管理ロジックを追加してください。
-              onChanged: (value) {
-                // 通知設定のトグル処理をここに実装
-              },
-            ),
-          ),
+          // ListTile(
+          //   leading: const Icon(Icons.notifications),
+          //   title: const Text("通知"),
+          //   trailing: Switch(
+          //     value: true, // これはプレースホルダです。通知の有効／無効管理ロジックを追加してください。
+          //     onChanged: (value) {
+          //       // 通知設定のトグル処理をここに実装
+          //     },
+          //   ),
+          // ),
+          // SettingsPage 内のキャッシュクリア項目
           ListTile(
             leading: const Icon(Icons.delete_forever),
             title: const Text("キャッシュクリア"),
             trailing: const Icon(Icons.arrow_forward),
-            onTap: () async {
-              // 例：SharedPreferences のキャッシュクリア
-              final prefs = await SharedPreferences.getInstance();
-              await prefs.clear();
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text("キャッシュをクリアしました。")),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const CacheClearScreen()),
               );
             },
           ),
+
           const Divider(),
 
           // 単語検索画面セクション
@@ -4733,25 +4826,25 @@ class SettingsPage extends StatelessWidget {
               ),
             ),
           ),
-          ListTile(
-            leading: const Icon(Icons.help),
-            title: const Text("ヘルプ"),
-            trailing: const Icon(Icons.arrow_forward),
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const HelpPage()),
-              );
-            },
-          ),
+          // ListTile(
+          //   leading: const Icon(Icons.help),
+          //   title: const Text("ヘルプ"),
+          //   trailing: const Icon(Icons.arrow_forward),
+          //   onTap: () {
+          //     Navigator.push(
+          //       context,
+          //       MaterialPageRoute(builder: (_) => const HelpPage()),
+          //     );
+          //   },
+          // ),
           ListTile(
             leading: const Icon(Icons.description),
-            title: const Text("利用規約"),
+            title: const Text("プライバシーポリシー"),
             trailing: const Icon(Icons.arrow_forward),
             onTap: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (_) => const TermsPage()),
+                MaterialPageRoute(builder: (_) => const PrivacyPolicy()),
               );
             },
           ),
@@ -4766,7 +4859,6 @@ class SettingsPage extends StatelessWidget {
               );
             },
           ),
-
         ],
       ),
     );
@@ -4797,14 +4889,15 @@ class SearchHistoryPage extends ConsumerWidget {
       ),
       body: productsAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, _) => Center(child: Text("データ読み込みエラー: $error")),
+        error: (error, _) =>
+            Center(child: Text("データ読み込みエラー: $error")),
         data: (allProducts) {
           // history の各単語名に対して、全単語リストから存在する場合のみ追加する
           final historyProducts = <Product>[];
           for (final name in history) {
             // 全単語リスト内で name と一致する商品が存在するかチェック
             final matchingProducts =
-                allProducts.where((p) => p.name == name).toList();
+            allProducts.where((p) => p.name == name).toList();
             if (matchingProducts.isNotEmpty) {
               historyProducts.add(matchingProducts.first);
             }
@@ -4846,7 +4939,7 @@ class SearchHistoryPage extends ConsumerWidget {
 }
 
 class MemoListPage extends ConsumerStatefulWidget {
-  const MemoListPage({Key? key}) : super(key: key);
+  const MemoListPage({super.key});
 
   @override
   ConsumerState<MemoListPage> createState() => _MemoListPageState();
@@ -4859,7 +4952,9 @@ class _MemoListPageState extends ConsumerState<MemoListPage> {
     List<Product> memoProducts = [];
     for (var product in products) {
       final memo = await loadMemo(product);
-      if (memo.trim().isNotEmpty) {
+      if (memo
+          .trim()
+          .isNotEmpty) {
         memoProducts.add(product);
       }
     }
@@ -4883,7 +4978,8 @@ class _MemoListPageState extends ConsumerState<MemoListPage> {
       ),
       body: productsAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, _) => Center(child: Text("データ読み込みエラー: $error")),
+        error: (error, _) =>
+            Center(child: Text("データ読み込みエラー: $error")),
         data: (products) {
           return FutureBuilder<List<Product>>(
             future: _getMemoProducts(products),
@@ -4913,29 +5009,31 @@ class _MemoListPageState extends ConsumerState<MemoListPage> {
                     ),
                     confirmDismiss: (direction) async {
                       return await showDialog<bool>(
-                            context: context,
-                            builder: (context) {
-                              return AlertDialog(
-                                title: const Text("削除の確認"),
-                                content:
-                                    Text("${product.name} のメモを削除してよろしいですか？"),
-                                actions: [
-                                  TextButton(
-                                      onPressed: () =>
-                                          Navigator.pop(context, false),
-                                      child: const Text("キャンセル")),
-                                  ElevatedButton(
-                                      onPressed: () =>
-                                          Navigator.pop(context, true),
-                                      child: const Text("削除")),
-                                ],
-                              );
-                            },
-                          ) ??
+                        context: context,
+                        builder: (context) {
+                          return AlertDialog(
+                            title: const Text("削除の確認"),
+                            content:
+                            Text("${product
+                                .name} のメモを削除してよろしいですか？"),
+                            actions: [
+                              TextButton(
+                                  onPressed: () =>
+                                      Navigator.pop(context, false),
+                                  child: const Text("キャンセル")),
+                              ElevatedButton(
+                                  onPressed: () =>
+                                      Navigator.pop(context, true),
+                                  child: const Text("削除")),
+                            ],
+                          );
+                        },
+                      ) ??
                           false;
                     },
                     onDismissed: (direction) async {
                       await _clearMemo(product);
+                      if (!context.mounted) return;
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(content: Text("メモが削除されました")),
                       );
@@ -4962,7 +5060,7 @@ class _MemoListPageState extends ConsumerState<MemoListPage> {
                           }
                           String memoText = memoSnapshot.data ?? "";
                           if (memoText.length > 15) {
-                            memoText = memoText.substring(0, 15) + "...";
+                            memoText = "${memoText.substring(0, 15)}...";
                           }
                           return Text(
                             memoText,
@@ -4980,7 +5078,8 @@ class _MemoListPageState extends ConsumerState<MemoListPage> {
                           builder: (context) {
                             return AlertDialog(
                               title: const Text("メモ削除の確認"),
-                              content: Text("${product.name} のメモを削除してよろしいですか？"),
+                              content: Text("${product
+                                  .name} のメモを削除してよろしいですか？"),
                               actions: [
                                 TextButton(
                                     onPressed: () =>
@@ -4996,8 +5095,10 @@ class _MemoListPageState extends ConsumerState<MemoListPage> {
                         );
                         if (confirm ?? false) {
                           await _clearMemo(product);
+                          if (!context.mounted) return;
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text("メモが削除されました")),
+                            const SnackBar(
+                                content: Text("メモが削除されました")),
                           );
                           setState(() {}); // 再描画
                         }
@@ -5035,21 +5136,48 @@ class HelpPage extends StatelessWidget {
   }
 }
 
-class TermsPage extends StatelessWidget {
-  const TermsPage({super.key});
+class PrivacyPolicy extends StatefulWidget {
+  const PrivacyPolicy({super.key});
+
+  @override
+  State<PrivacyPolicy> createState() => _PrivacyPolicyState();
+}
+
+class _PrivacyPolicyState extends State<PrivacyPolicy> {
+  late Future<String> _policyFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    // assets/privacypolicy.txt からテキストを読み込む
+    _policyFuture = rootBundle.loadString('assets/privacypolicy.txt');
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("利用規約"),
+        title: const Text("プライバシーポリシー"),
         centerTitle: true,
       ),
-      body: Center(
-        child: Text(
-          "利用規約画面（実装予定）",
-          style: TextStyle(fontSize: context.fontSizeMedium),
-        ),
+      body: FutureBuilder<String>(
+        future: _policyFuture,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          } else if (snapshot.hasError) {
+            return const Center(
+                child: Text("プライバシーポリシーの読み込みに失敗しました"));
+          } else {
+            return SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
+              child: Text(
+                snapshot.data!,
+                style: const TextStyle(fontSize: 16),
+              ),
+            );
+          }
+        },
       ),
     );
   }
@@ -5143,6 +5271,172 @@ class SearchHistoryNotifier extends StateNotifier<List<String>> {
   }
 }
 
-final searchHistoryProvider =
-    StateNotifierProvider<SearchHistoryNotifier, List<String>>(
-        (ref) => SearchHistoryNotifier());
+class CacheClearScreen extends StatefulWidget {
+  const CacheClearScreen({super.key});
+
+  @override
+  CacheClearScreenState createState() => CacheClearScreenState();
+}
+
+class CacheClearScreenState extends State<CacheClearScreen> {
+  // キャッシュ削除対象のキーと初期選択状態
+  // 'memo_list' は「メモ一覧」に対応し、削除時は "memo_" で始まるキーをすべて削除します。
+  final Map<String, bool> _selected = {
+    'search_history': false,
+    'mistake_counts': false,
+    'saved_categories': false,
+    'saved_items': false,
+    'memo_list': false,
+  };
+
+  // 各キーの表示用ラベル
+  final Map<String, String> _labels = {
+    'search_history': '検索履歴',
+    'mistake_counts': 'ミス回数',
+    'saved_categories': 'カテゴリー',
+    'saved_items': '保存単語',
+    'memo_list': 'メモ一覧',
+  };
+
+  // 「すべて削除」チェックボックスの状態
+  bool _allSelected = false;
+
+  /// 「すべて削除」チェックボックスの更新処理
+  void _toggleAll(bool? val) {
+    setState(() {
+      _allSelected = val ?? false;
+      _selected.updateAll((key, value) => _allSelected);
+    });
+  }
+
+  /// 個別チェックボックス更新時の処理
+  void _toggleItem(String key, bool? val) {
+    setState(() {
+      _selected[key] = val ?? false;
+      // すべてが true なら _allSelected を true、1つでも false があれば false に
+      _allSelected = !_selected.values.contains(false);
+    });
+  }
+
+  /// 削除確認ダイアログ後、選択対象のキャッシュキーを削除して再起動
+  Future<void> _clearCache() async {
+    bool? confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) =>
+          AlertDialog(
+            title: const Text("確認"),
+            content: const Text("削除してよろしいですか？"),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text("キャンセル"),
+              ),
+              ElevatedButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: const Text("削除"),
+              ),
+            ],
+          ),
+    );
+
+    if (confirm == true) {
+      final prefs = await SharedPreferences.getInstance();
+      for (var entry in _selected.entries) {
+        if (entry.value) {
+          if (entry.key == 'memo_list') {
+            // 「メモ一覧」を選択した場合は、"memo_" で始まるすべてのキーを削除
+            for (final k in prefs.getKeys()) {
+              if (k.startsWith("memo_")) {
+                await prefs.remove(k);
+              }
+            }
+          } else {
+            await prefs.remove(entry.key);
+          }
+        }
+      }
+      // 削除完了後、わかりやすいUI の再起動メッセージ画面を表示
+      await showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) {
+          // 複数のウィジェットを縦に並べたUI
+          Future.delayed(const Duration(milliseconds: 500), () {
+            Phoenix.rebirth(context);
+          });
+          return const AlertDialog(
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.check_circle_outline,
+                  color: Colors.green,
+                  size: 64,
+                ),
+                SizedBox(height: 16),
+                Text(
+                  'キャッシュがクリアされました。',
+                  style: TextStyle(fontSize: 18),
+                ),
+                Text(
+                  '再起動します。',
+                  style: TextStyle(fontSize: 18),
+                ),
+                SizedBox(height: 16),
+                CircularProgressIndicator(),
+              ],
+            ),
+          );
+        },
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text("キャッシュクリア"),
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          children: [
+            // 「すべて削除」チェックボックス
+            CheckboxListTile(
+              title: const Text("すべて削除", style: TextStyle(fontSize: 14)),
+              value: _allSelected,
+              onChanged: _toggleAll,
+              controlAffinity: ListTileControlAffinity.leading,
+              dense: true,
+              contentPadding: EdgeInsets.zero,
+            ),
+            // 個別のチェック項目 (リスト形式)
+            Expanded(
+              child: ListView(
+                shrinkWrap: true,
+                children: _selected.keys.map((key) {
+                  return CheckboxListTile(
+                    title: Text(_labels[key] ?? key,
+                        style: const TextStyle(fontSize: 14)),
+                    value: _selected[key],
+                    onChanged: (val) => _toggleItem(key, val),
+                    dense: true,
+                    contentPadding: EdgeInsets.zero,
+                    visualDensity: VisualDensity.compact,
+                  );
+                }).toList(),
+              ),
+            ),
+            const SizedBox(height: 8),
+            // 「削除」ボタンでキャッシュ削除処理を実行
+            ElevatedButton(
+              onPressed: _clearCache,
+              child: const Text("削除"),
+            )
+          ],
+        ),
+      ),
+    );
+  }
+}
