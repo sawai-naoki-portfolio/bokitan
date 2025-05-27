@@ -1,8 +1,8 @@
-簿記単 
+# 簿記単 
 簿記の勉強に、頼れる強い味方。
 
 
-概要 (Overview)
+## 概要 (Overview)
 「簿記単」は、簿記の資格取得を目指すすべての学習者のための、簿記用語に特化した単語帳アプリケーションです。
 
 簿記の学習中、「参考書の索引に載っていない」「ネットで検索すると情報が多すぎる」といった自身の経験から、効率的に語彙力を強化できる専門アプリの必要性を感じ、開発に至りました。
@@ -10,10 +10,21 @@
 このアプリ一つで、単語の検索から暗記、クイズでの実力試しまで、簿記学習を強力にサポートします。
 
 
+| 1枚目  | 2枚目 | 3枚目  | 4枚目 | 5枚目  |
+| ------------- | ------------- | ------------- | ------------- | ------------- |
+| ![1枚目](https://github.com/user-attachments/assets/c9af487d-318d-4bb0-b34a-66fcefc47546)  | ![2枚目](https://github.com/user-attachments/assets/c2988fab-560f-4e42-b57c-f810785bb048)  | ![3枚目](https://github.com/user-attachments/assets/85074e10-c326-4127-9554-968bdd655071) | ![4枚目](https://github.com/user-attachments/assets/b5473861-1601-43e4-a24f-10ededb20ea4)  | ![5枚目](https://github.com/user-attachments/assets/9dfd7a34-15db-4c13-99d9-20380f09d060)  |
 
 
 
-主な機能 (Features)
+
+
+
+
+
+
+
+
+## 主な機能 (Features)
 このアプリには、効率的な学習をサポートするための機能が豊富に搭載されています。
 
 📚 豊富な単語データベース:
@@ -54,46 +65,50 @@ Material 3対応: 最新のUIデザインに対応し、ON/OFFの切り替えが
 
 
 キャッシュクリア: 検索履歴やミス回数など、不要なデータを個別に削除できます。
+
 🤝 共有機能:
 
 学習した単語カードを画像としてSNSなどで簡単に共有できます。
 
 
-こだわった点・アピールポイント (Highlights)
-状態管理にRiverpodを採用:
+## こだわった点・アピールポイント (Highlights)
+状態管理にRiverpodを採用:  
 StateNotifierProvider, FutureProvider, Provider などを機能やデータの特性に応じて使い分け、宣言的でリアクティブな状態管理を実装しました。  これにより、UIとビジネスロジックをクリーンに分離し、保守性とテストの容易性を高めています。
 
 
 
-UI/UXへのこだわり:
+
+UI/UXへのこだわり:  
 ユーザーが直感的に操作できるよう、DismissibleやGestureDetectorを用いたスワイプでの削除  や、長押しでのコンテキストメニュー表示  を実装しました。また、BuildContextの拡張機能を作成し、画面サイズに応じたレスポンシブなUIを実現しています。
 
 
 
 
 
-コンポーネントの再利用性:
+コンポーネントの再利用性:  
 ProductCard  や CommonProductListView  といった共通ウィジェットを作成し、アプリ全体で一貫性のあるUIを提供すると同時に、コードの重複を削減し開発効率を向上させました。
 
 
-柔軟なデータ永続化:
+
+柔軟なデータ永続化:  
 shared_preferences を活用し、テーマ設定 、保存単語リスト 、カテゴリー情報 、クイズのミス回数  など、多岐にわたるユーザーデータを永続化しています。
 
 
 
 
-使用技術 (Tech Stack)
-Framework: Flutter
-Language: Dart
-State Management: flutter_riverpod
-Local Storage: shared_preferences
-Routing: MaterialPageRoute
-Libraries:
-intl: フォーマット処理
-url_launcher: 外部リンク起動
 
-share_plus: SNS共有
-path_provider: 一時ファイルパス取得
-math_expressions: 電卓機能
-flutter_phoenix: アプリ再起動
+## 使用技術 (Tech Stack)
+Framework: Flutter  
+Language: Dart  
+State Management: flutter_riverpod  
+Local Storage: shared_preferences  
+Routing: MaterialPageRoute  
+Libraries:  
+intl: フォーマット処理  
+url_launcher: 外部リンク起動  
+  
+share_plus: SNS共有  
+path_provider: 一時ファイルパス取得  
+math_expressions: 電卓機能  
+flutter_phoenix: アプリ再起動  
 
