@@ -8,7 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../provider/checkedQuestionsProvider.dart';
 import '../provider/productsProvider.dart';
 import '../utility/Product.dart';
-import 'CategoryAssignmentSheet.dart';
+import 'category_page/CategoryAssignmentSheet.dart';
 
 class WordListPage extends ConsumerStatefulWidget {
   const WordListPage({super.key});

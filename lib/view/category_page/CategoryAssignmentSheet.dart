@@ -11,9 +11,9 @@ import 'package:bookkeeping_vocabulary_notebook/view/widget/showCategoryCreation
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../provider/categoriesProvider.dart';
-import '../provider/savedItemsProvider.dart';
-import '../utility/Product.dart';
+import '../../provider/categoriesProvider.dart';
+import '../../provider/savedItemsProvider.dart';
+import '../../utility/Product.dart';
 
 class CategoryAssignmentSheet extends ConsumerStatefulWidget {
   final Product product;

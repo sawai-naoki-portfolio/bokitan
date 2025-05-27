@@ -9,7 +9,7 @@ import '../provider/checkedQuestionsProvider.dart';
 import '../provider/productsProvider.dart';
 import '../provider/savedItemsProvider.dart';
 import '../utility/SwipeToDeleteCard.dart';
-import 'CategoryAssignmentSheet.dart';
+import 'category_page/CategoryAssignmentSheet.dart';
 
 //////////////////////////////////////////////
 // SavedItemsPage

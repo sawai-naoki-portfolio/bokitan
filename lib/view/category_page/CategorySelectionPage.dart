@@ -4,9 +4,9 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../provider/categoriesProvider.dart';
-import '../utility/Category.dart';
-import '../utility/SwipeToDeleteCard.dart';
+import '../../provider/categoriesProvider.dart';
+import '../../utility/Category.dart';
+import '../../utility/SwipeToDeleteCard.dart';
 import 'CategoryItemsPage.dart';
 
 //////////////////////////////////////////////

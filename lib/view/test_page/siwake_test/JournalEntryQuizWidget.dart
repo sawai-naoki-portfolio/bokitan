@@ -11,9 +11,9 @@ import 'package:bookkeeping_vocabulary_notebook/view/widget/CalculatorWidget.dar
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
-import '../utility/JournalEntry.dart';
-import '../utility/SortingProblem.dart';
-import '../utility/ThousandsSeparatorInputFormatter.dart';
+import '../../../utility/JournalEntry.dart';
+import '../../../utility/SortingProblem.dart';
+import '../../../utility/ThousandsSeparatorInputFormatter.dart';
 
 class JournalEntryQuizWidget extends StatefulWidget {
   final SortingProblem problem;

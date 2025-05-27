@@ -9,13 +9,13 @@ import '../provider/productsProvider.dart';
 import '../provider/searchHistoryProvider.dart';
 import '../provider/searchQueryProvider.dart';
 import '../utility/Product.dart';
-import 'CategoryAssignmentSheet.dart';
-import 'CategorySelectionPage.dart';
-import 'CheckedQuestionsPage.dart';
+import 'category_page/CategoryAssignmentSheet.dart';
+import 'test_page/check_test/CheckedQuestionsPage.dart';
 import 'SavedItemsPage.dart';
+import 'category_page/CategorySelectionPage.dart';
 import 'setting_page/SettingsPage.dart';
 import 'WordListPage.dart';
-import 'WordTestPage.dart';
+import 'test_page/word_test/WordTestPage.dart';
 
 /// ---------------------------------------------------------------------------
 /// SearchPage

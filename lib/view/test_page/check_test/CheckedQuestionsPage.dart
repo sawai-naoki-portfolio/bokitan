@@ -4,11 +4,11 @@ import 'package:bookkeeping_vocabulary_notebook/view/widget/showProductDialog.da
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../provider/checkedQuestionsProvider.dart';
-import '../provider/productsProvider.dart';
-import '../utility/Product.dart';
-import '../utility/SwipeToDeleteCard.dart';
-import 'CategoryAssignmentSheet.dart';
+import '../../../provider/checkedQuestionsProvider.dart';
+import '../../../provider/productsProvider.dart';
+import '../../../utility/Product.dart';
+import '../../../utility/SwipeToDeleteCard.dart';
+import '../../category_page/CategoryAssignmentSheet.dart';
 import 'CheckboxTestPage.dart';
 
 /// ---------------------------------------------------------------------------

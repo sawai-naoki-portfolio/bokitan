@@ -4,13 +4,15 @@ import 'package:bookkeeping_vocabulary_notebook/view/widget/showProductDialog.da
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../provider/allProductsProvider.dart';
-import '../provider/categoriesProvider.dart';
-import '../provider/checkedQuestionsProvider.dart';
-import '../utility/Category.dart';
-import '../utility/Product.dart';
-import '../utility/SwipeToDeleteCard.dart';
+import '../../provider/allProductsProvider.dart';
+import '../../provider/categoriesProvider.dart';
+import '../../provider/checkedQuestionsProvider.dart';
+import '../../utility/Category.dart';
+import '../../utility/Product.dart';
+import '../../utility/SwipeToDeleteCard.dart';
 import 'CategoryAssignmentSheet.dart';
+
+
 
 class CategoryItemsPage extends ConsumerStatefulWidget {
   final Category category;

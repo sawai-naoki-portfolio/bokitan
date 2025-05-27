@@ -2,13 +2,14 @@ import 'package:bookkeeping_vocabulary_notebook/utility/ResponsiveSizes.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../provider/checkedQuestionsProvider.dart';
-import '../provider/mistakeCountsProvider.dart';
-import '../provider/productsProvider.dart';
-import '../utility/Product.dart';
-import '../utility/WordTestQuestion.dart';
-import 'CheckboxTestPage.dart';
+import '../../../provider/checkedQuestionsProvider.dart';
+import '../../../provider/mistakeCountsProvider.dart';
+import '../../../provider/productsProvider.dart';
+import '../../../utility/Product.dart';
+import '../../../utility/WordTestQuestion.dart';
+import '../check_test/CheckboxTestPage.dart';
 import 'WordTestPage.dart';
+
 
 /// ---------------------------------------------------------------------------
 /// WordTestResultPage
