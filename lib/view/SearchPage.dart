@@ -4,6 +4,7 @@ import 'package:bookkeeping_vocabulary_notebook/view/widget/showProductDialog.da
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../main.dart';
 import '../provider/checkedQuestionsProvider.dart';
 import '../provider/productsProvider.dart';
 import '../provider/searchHistoryProvider.dart';
@@ -273,6 +274,35 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                             ),
                           ),
 
+                          const Divider(height: 1),
+                          InkWell(
+                            onTap: () {
+                              Navigator.pop(context);
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (_) =>
+                                    const ScheduleManagementPage()),
+                              );
+                            },
+                            child: Container(
+                              padding: EdgeInsets.symmetric(
+                                  vertical: context.paddingMedium,
+                                  horizontal: context.paddingSmall),
+                              child: Row(
+                                children: [
+                                  const Icon(Icons.calendar_today,
+                                      color: Colors.blue),
+                                  context.horizontalSpaceMedium,
+                                  Expanded(
+                                    child: Text("スケジュール管理",
+                                        style: TextStyle(
+                                            fontSize: context.fontSizeMedium)),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
                           const Divider(height: 1),
                           // 既存の SearchPage のモーダルメニュー内に「設定」項目を追加
 // （SearchPage の build() メソッド内、メニュー表示部分の最後あたりに追加）
