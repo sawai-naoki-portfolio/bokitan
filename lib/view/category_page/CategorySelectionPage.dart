@@ -1,6 +1,5 @@
 import 'package:bookkeeping_vocabulary_notebook/utility/ResponsiveSizes.dart';
 import 'package:bookkeeping_vocabulary_notebook/view/widget/showCategoryCreationDialog.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 

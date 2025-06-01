@@ -498,6 +498,11 @@ class _ScheduleManagementPageState
             lastDay: DateTime.utc(2100, 12, 31),
             focusedDay: _focusedDay,
             calendarFormat: CalendarFormat.month,
+            headerStyle: HeaderStyle(
+              titleCentered: true,
+              titleTextFormatter: (date, locale) =>
+                  DateFormat('yyyy/MM', locale).format(date),
+            ),
             // 初期フォーマットを月表示に設定
             // availableCalendarFormats で、2週間表示や週表示を除外し、月表示のみを表示
             availableCalendarFormats: const {
@@ -662,7 +667,7 @@ class _ScheduleManagementPageState
                                 title: Text(event.title),
                                 subtitle: Text(
                                   "${DateFormat.yMd().add_jm().format(event.startTime)} ～ "
-                                  "${DateFormat.yMd().add_jm().format(event.endTime)}\n科目: ${event.subject}",
+                                  "${DateFormat.yMd().add_jm().format(event.endTime)}\n${event.description}",
                                 ),
                                 onTap: () {
                                   Navigator.push(
@@ -947,7 +952,6 @@ class _AddEditSchedulePageState extends ConsumerState<AddEditSchedulePage> {
                       final subject = _subjectController.text.trim();
                       final description = _descriptionController.text.trim();
                       if (title.isEmpty ||
-                          description.isEmpty ||
                           _startTime == null ||
                           (_selectedMode == ScheduleMode.study &&
                               _endTime == null)) {
@@ -980,6 +984,47 @@ class _AddEditSchedulePageState extends ConsumerState<AddEditSchedulePage> {
                   )
                 : Row(
                     children: [
+                      Expanded(
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.blue,
+                          ),
+                          onPressed: () async {
+                            // 削除前の確認ダイアログ
+                            bool confirmed = await showDialog<bool>(
+                                  context: context,
+                                  builder: (context) {
+                                    return AlertDialog(
+                                      title: const Text("削除の確認"),
+                                      content:
+                                          const Text("本当にこのスケジュールを削除しますか？"),
+                                      actions: [
+                                        TextButton(
+                                          onPressed: () =>
+                                              Navigator.pop(context, false),
+                                          child: const Text("キャンセル"),
+                                        ),
+                                        ElevatedButton(
+                                          onPressed: () =>
+                                              Navigator.pop(context, true),
+                                          child: const Text("削除"),
+                                        ),
+                                      ],
+                                    );
+                                  },
+                                ) ??
+                                false;
+                            if (confirmed) {
+                              await ref
+                                  .read(scheduleProvider.notifier)
+                                  .removeSchedule(widget.scheduleItem!.id);
+                              Navigator.pop(context);
+                            }
+                          },
+                          child: const Text("削除"),
+                        ),
+                      ),
+                      const SizedBox(width: 16),
                       Expanded(
                         child: ElevatedButton(
                           onPressed: () {
@@ -1023,47 +1068,6 @@ class _AddEditSchedulePageState extends ConsumerState<AddEditSchedulePage> {
                             Navigator.pop(context);
                           },
                           child: const Text("保存"),
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.blue,
-                          ),
-                          onPressed: () async {
-                            // 削除前の確認ダイアログ
-                            bool confirmed = await showDialog<bool>(
-                                  context: context,
-                                  builder: (context) {
-                                    return AlertDialog(
-                                      title: const Text("削除の確認"),
-                                      content:
-                                          const Text("本当にこのスケジュールを削除しますか？"),
-                                      actions: [
-                                        TextButton(
-                                          onPressed: () =>
-                                              Navigator.pop(context, false),
-                                          child: const Text("キャンセル"),
-                                        ),
-                                        ElevatedButton(
-                                          onPressed: () =>
-                                              Navigator.pop(context, true),
-                                          child: const Text("削除"),
-                                        ),
-                                      ],
-                                    );
-                                  },
-                                ) ??
-                                false;
-                            if (confirmed) {
-                              await ref
-                                  .read(scheduleProvider.notifier)
-                                  .removeSchedule(widget.scheduleItem!.id);
-                              Navigator.pop(context);
-                            }
-                          },
-                          child: const Text("削除"),
                         ),
                       ),
                     ],

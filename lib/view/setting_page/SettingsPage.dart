@@ -2,6 +2,7 @@
 import 'package:bookkeeping_vocabulary_notebook/utility/ResponsiveSizes.dart';
 import 'package:flutter/material.dart';
 
+import '../WordListPage.dart';
 import 'CacheClearScreen.dart';
 import 'FeedbackPage.dart';
 import 'MemoListPage.dart';
@@ -98,7 +99,7 @@ class SettingsPage extends StatelessWidget {
           Padding(
             padding: EdgeInsets.all(context.paddingMedium),
             child: Text(
-              "メモ",
+              "メモ一覧・単語一覧",
               style: TextStyle(
                 fontSize: context.fontSizeLarge,
                 fontWeight: FontWeight.bold,
@@ -113,6 +114,17 @@ class SettingsPage extends StatelessWidget {
               Navigator.push(
                 context,
                 MaterialPageRoute(builder: (_) => const MemoListPage()),
+              );
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.list),
+            title: const Text("単語一覧"),
+            trailing: const Icon(Icons.arrow_forward),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const WordListPage()),
               );
             },
           ),

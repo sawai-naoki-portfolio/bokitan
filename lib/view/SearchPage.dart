@@ -337,33 +337,6 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                             ),
                           ),
                           const Divider(height: 1),
-
-                          InkWell(
-                            onTap: () {
-                              Navigator.pop(context);
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                    builder: (_) => const WordListPage()),
-                              );
-                            },
-                            child: Container(
-                              padding: EdgeInsets.symmetric(
-                                  vertical: context.paddingMedium,
-                                  horizontal: context.paddingSmall),
-                              child: Row(
-                                children: [
-                                  const Icon(Icons.list, color: Colors.blue),
-                                  context.horizontalSpaceMedium,
-                                  Expanded(
-                                      child: Text("単語一覧",
-                                          style: TextStyle(
-                                              fontSize:
-                                                  context.fontSizeMedium))),
-                                ],
-                              ),
-                            ),
-                          ),
                         ],
                       ),
                     );
