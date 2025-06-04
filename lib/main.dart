@@ -526,164 +526,199 @@ class _ScheduleManagementPageState
               ),
             ),
             eventLoader: getEventsForDay,
+            calendarBuilders: CalendarBuilders(
+              markerBuilder: (context, date, events) {
+                if (events.isEmpty) return const SizedBox.shrink();
+                return Positioned(
+                  bottom: 1,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: events.map((event) {
+                      return Container(
+                        width: 6,
+                        height: 6,
+                        margin: const EdgeInsets.symmetric(horizontal: 1),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: event.isExamDate ? Colors.red : Colors.blue,
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                );
+              },
+            ),
           ),
 
           const Divider(),
           Expanded(
-            child: _selectedDay == null
-                ? (scheduleList.isEmpty
-                    ? const Center(
-                        child: Text(
-                          "スケジュールが設定されていません",
-                          style: TextStyle(fontSize: 18),
-                        ),
-                      )
-                    : Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // カレンダーで日付が選択されていない場合のみヘッダーを表示
-                          const Padding(
-                            padding: EdgeInsets.symmetric(
-                                horizontal: 16, vertical: 8),
-                            child: Text(
-                              "スケジュール一覧",
-                              style: TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
+              child: _selectedDay == null
+                  ? (scheduleList.isEmpty
+                      ? const Center(
+                          child: Text(
+                            "スケジュールが設定されていません",
+                            style: TextStyle(fontSize: 18),
+                          ),
+                        )
+                      : Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // カレンダーで日付が選択されていない場合のみヘッダーを表示
+                            const Padding(
+                              padding: EdgeInsets.symmetric(
+                                  horizontal: 16, vertical: 8),
+                              child: Text(
+                                "スケジュール一覧",
+                                style: TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                             ),
-                          ),
-                          Expanded(
-                            child: ListView.builder(
-                              itemCount: scheduleList.length,
-                              itemBuilder: (context, index) {
-                                final event = scheduleList[index];
-                                return SwipeToDeleteCard(
-                                  keyValue: ValueKey(event.id),
-                                  onConfirm: () async {
-                                    return await showDialog<bool>(
-                                          context: context,
-                                          builder: (context) {
-                                            return AlertDialog(
-                                              title: const Text("削除の確認"),
-                                              content: const Text(
-                                                  "このスケジュールを削除しますか？"),
-                                              actions: [
-                                                TextButton(
-                                                  onPressed: () =>
-                                                      Navigator.pop(
-                                                          context, false),
-                                                  child: const Text("キャンセル"),
-                                                ),
-                                                ElevatedButton(
-                                                  onPressed: () =>
-                                                      Navigator.pop(
-                                                          context, true),
-                                                  child: const Text("削除"),
-                                                ),
-                                              ],
-                                            );
-                                          },
-                                        ) ??
-                                        false;
-                                  },
-                                  onDismissed: () async {
-                                    await ref
-                                        .read(scheduleProvider.notifier)
-                                        .removeSchedule(event.id);
-                                  },
-                                  child: Card(
-                                    margin: const EdgeInsets.symmetric(
-                                        vertical: 4, horizontal: 8),
-                                    child: ListTile(
-                                      title: Text(event.title),
-                                      subtitle: Text(
-                                        "${DateFormat.yMd().add_jm().format(event.startTime)} ～ "
-                                        "${DateFormat.yMd().add_jm().format(event.endTime)}\n${event.description}",
-                                      ),
-                                      onTap: () {
-                                        Navigator.push(
-                                          context,
-                                          MaterialPageRoute(
-                                            builder: (_) => AddEditSchedulePage(
-                                                scheduleItem: event),
-                                          ),
-                                        );
-                                      },
-                                    ),
-                                  ),
-                                );
-                              },
-                            ),
-                          ),
-                        ],
-                      ))
-                : (getEventsForDay(_selectedDay!).isEmpty
-                    ? const Center(
-                        child: Text(
-                        "この日は何も設定されていません",
-                        style: TextStyle(fontSize: 18),
-                      ))
-                    : ListView.builder(
-                        // ヘッダーは表示せず、直接イベント一覧のListViewをレンダリング
-                        itemCount: getEventsForDay(_selectedDay!).length,
-                        itemBuilder: (context, index) {
-                          final event = getEventsForDay(_selectedDay!)[index];
-                          return SwipeToDeleteCard(
-                            keyValue: ValueKey(event.id),
-                            onConfirm: () async {
-                              return await showDialog<bool>(
-                                    context: context,
-                                    builder: (context) {
-                                      return AlertDialog(
-                                        title: const Text("削除の確認"),
-                                        content: const Text("このスケジュールを削除しますか？"),
-                                        actions: [
-                                          TextButton(
-                                            onPressed: () =>
-                                                Navigator.pop(context, false),
-                                            child: const Text("キャンセル"),
-                                          ),
-                                          ElevatedButton(
-                                            onPressed: () =>
-                                                Navigator.pop(context, true),
-                                            child: const Text("削除"),
-                                          ),
-                                        ],
-                                      );
+                            // カレンダーで日付が選択されていない場合
+                            Expanded(
+                              child: ListView.builder(
+                                itemCount: scheduleList.length,
+                                itemBuilder: (context, index) {
+                                  final event = scheduleList[index];
+                                  return SwipeToDeleteCard(
+                                    keyValue: ValueKey(event.id),
+                                    onConfirm: () async {
+                                      return await showDialog<bool>(
+                                            context: context,
+                                            builder: (context) {
+                                              return AlertDialog(
+                                                title: const Text("削除の確認"),
+                                                content: const Text(
+                                                    "このスケジュールを削除しますか？"),
+                                                actions: [
+                                                  TextButton(
+                                                    onPressed: () =>
+                                                        Navigator.pop(
+                                                            context, false),
+                                                    child: const Text("キャンセル"),
+                                                  ),
+                                                  ElevatedButton(
+                                                    onPressed: () =>
+                                                        Navigator.pop(
+                                                            context, true),
+                                                    child: const Text("削除"),
+                                                  ),
+                                                ],
+                                              );
+                                            },
+                                          ) ??
+                                          false;
                                     },
-                                  ) ??
-                                  false;
-                            },
-                            onDismissed: () async {
-                              await ref
-                                  .read(scheduleProvider.notifier)
-                                  .removeSchedule(event.id);
-                            },
-                            child: Card(
-                              margin: const EdgeInsets.symmetric(
-                                  vertical: 4, horizontal: 8),
-                              child: ListTile(
-                                title: Text(event.title),
-                                subtitle: Text(
-                                  "${DateFormat.yMd().add_jm().format(event.startTime)} ～ "
-                                  "${DateFormat.yMd().add_jm().format(event.endTime)}\n${event.description}",
-                                ),
-                                onTap: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (_) => AddEditSchedulePage(
-                                          scheduleItem: event),
+                                    onDismissed: () async {
+                                      await ref
+                                          .read(scheduleProvider.notifier)
+                                          .removeSchedule(event.id);
+                                    },
+                                    child: Card(
+                                      margin: const EdgeInsets.symmetric(
+                                          vertical: 4, horizontal: 8),
+                                      child: ListTile(
+                                        title: Text(event.title),
+                                        subtitle: event.isExamDate
+                                            ? Text(
+                                                "${DateFormat('yyyy/MM/dd').format(event.startTime)}\n${event.description}",
+                                              )
+                                            : Text(
+                                                "${DateFormat('yyyy/MM/dd HH:mm').format(event.startTime)} ～ "
+                                                "${DateFormat('yyyy/MM/dd HH:mm').format(event.endTime)}\n${event.description}",
+                                              ),
+                                        onTap: () {
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (_) =>
+                                                  AddEditSchedulePage(
+                                                      scheduleItem: event),
+                                            ),
+                                          );
+                                        },
+                                      ),
                                     ),
                                   );
                                 },
                               ),
                             ),
-                          );
-                        },
-                      )),
-          ),
+                          ],
+                        ))
+                  : (getEventsForDay(_selectedDay!).isEmpty
+                      ? const Center(
+                          child: Text(
+                          "この日は何も設定されていません",
+                          style: TextStyle(fontSize: 18),
+                        ))
+                      : Expanded(
+                          child: ListView.builder(
+                            // ヘッダーは表示せず、直接イベント一覧のListViewをレンダリング
+                            itemCount: getEventsForDay(_selectedDay!).length,
+                            itemBuilder: (context, index) {
+                              final event =
+                                  getEventsForDay(_selectedDay!)[index];
+                              return SwipeToDeleteCard(
+                                keyValue: ValueKey(event.id),
+                                onConfirm: () async {
+                                  return await showDialog<bool>(
+                                        context: context,
+                                        builder: (context) {
+                                          return AlertDialog(
+                                            title: const Text("削除の確認"),
+                                            content:
+                                                const Text("このスケジュールを削除しますか？"),
+                                            actions: [
+                                              TextButton(
+                                                onPressed: () => Navigator.pop(
+                                                    context, false),
+                                                child: const Text("キャンセル"),
+                                              ),
+                                              ElevatedButton(
+                                                onPressed: () => Navigator.pop(
+                                                    context, true),
+                                                child: const Text("削除"),
+                                              ),
+                                            ],
+                                          );
+                                        },
+                                      ) ??
+                                      false;
+                                },
+                                onDismissed: () async {
+                                  await ref
+                                      .read(scheduleProvider.notifier)
+                                      .removeSchedule(event.id);
+                                },
+                                child: Card(
+                                  margin: const EdgeInsets.symmetric(
+                                      vertical: 4, horizontal: 8),
+                                  child: ListTile(
+                                    title: Text(event.title),
+                                    subtitle: event.isExamDate
+                                        ? Text(
+                                            "${DateFormat('yyyy/MM/dd').format(event.startTime)}\n${event.description}",
+                                          )
+                                        : Text(
+                                            "${DateFormat('yyyy/MM/dd').add_jm().format(event.startTime)} ～ "
+                                            "${DateFormat('yyyy/MM/dd').add_jm().format(event.endTime)}\n${event.description}",
+                                          ),
+                                    onTap: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (_) => AddEditSchedulePage(
+                                              scheduleItem: event),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ))),
         ],
       ),
       floatingActionButton: FloatingActionButton(
@@ -852,7 +887,8 @@ class _AddEditSchedulePageState extends ConsumerState<AddEditSchedulePage> {
             if (_selectedMode == ScheduleMode.exam)
               // 受験日モードの場合：受験日として１つの日付のみ選択（ここでは_startTimeを使用）
               ListTile(
-                title: Text("受験日: ${DateFormat.yMd().format(_startTime!)}"),
+                title: Text(
+                    "受験日: ${DateFormat('yyyy/MM/dd').format(_startTime!)}"),
                 trailing: IconButton(
                   icon: const Icon(Icons.calendar_today),
                   onPressed: () async {
@@ -880,7 +916,7 @@ class _AddEditSchedulePageState extends ConsumerState<AddEditSchedulePage> {
               // 勉強タスクモードの場合：開始日時／終了日時／タスク入力欄をそのまま使用
               ListTile(
                 title: Text(
-                    "開始日時: ${DateFormat.yMd().add_jm().format(_startTime!)}"),
+                    "開始日時: ${DateFormat('yyyy/MM/dd').add_jm().format(_startTime!)}"),
                 trailing: IconButton(
                   icon: const Icon(Icons.calendar_today),
                   onPressed: () async {
@@ -912,7 +948,7 @@ class _AddEditSchedulePageState extends ConsumerState<AddEditSchedulePage> {
               ),
               ListTile(
                 title: Text(
-                    "終了日時: ${DateFormat.yMd().add_jm().format(_endTime!)}"),
+                    "終了日時: ${DateFormat('yyyy/MM/dd').add_jm().format(_endTime!)}"),
                 trailing: IconButton(
                   icon: const Icon(Icons.calendar_today),
                   onPressed: () async {
