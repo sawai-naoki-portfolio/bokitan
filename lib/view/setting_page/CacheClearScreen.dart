@@ -12,12 +12,14 @@ class CacheClearScreen extends StatefulWidget {
 class CacheClearScreenState extends State<CacheClearScreen> {
   // キャッシュ削除対象のキーと初期選択状態
   // 'memo_list' は「メモ一覧」に対応し、削除時は "memo_" で始まるキーをすべて削除します。
+  // 'schedule_list' は「スケジュール」に対応し、削除時は "schedule_items" キーを削除します。
   final Map<String, bool> _selected = {
     'search_history': false,
     'mistake_counts': false,
     'saved_categories': false,
     'saved_items': false,
     'memo_list': false,
+    'schedule_list': false,
   };
 
   // 各キーの表示用ラベル
@@ -25,8 +27,9 @@ class CacheClearScreenState extends State<CacheClearScreen> {
     'search_history': '検索履歴',
     'mistake_counts': 'ミス回数',
     'saved_categories': 'リスト',
-    'saved_items': '保存単語',
+    'saved_items': '保存単語一覧',
     'memo_list': 'メモ一覧',
+    'schedule_list': 'スケジュール',
   };
 
   // 「すべて削除」チェックボックスの状態
@@ -71,6 +74,7 @@ class CacheClearScreenState extends State<CacheClearScreen> {
 
     if (confirm == true) {
       final prefs = await SharedPreferences.getInstance();
+
       for (var entry in _selected.entries) {
         if (entry.value) {
           if (entry.key == 'memo_list') {
@@ -80,17 +84,20 @@ class CacheClearScreenState extends State<CacheClearScreen> {
                 await prefs.remove(k);
               }
             }
+          } else if (entry.key == 'schedule_list') {
+            // 「スケジュール」を選択した場合は、"schedule_items" キーを削除する
+            await prefs.remove("schedule_items");
           } else {
+            // その他のキーを削除
             await prefs.remove(entry.key);
           }
         }
       }
-      // 削除完了後、わかりやすいUI の再起動メッセージ画面を表示
+      // 削除完了後、再起動画面を表示して数秒後にアプリを再起動
       await showDialog(
         context: context,
         barrierDismissible: false,
         builder: (context) {
-          // 複数のウィジェットを縦に並べたUI
           Future.delayed(const Duration(milliseconds: 500), () {
             Phoenix.rebirth(context);
           });
@@ -147,8 +154,10 @@ class CacheClearScreenState extends State<CacheClearScreen> {
                 shrinkWrap: true,
                 children: _selected.keys.map((key) {
                   return CheckboxListTile(
-                    title: Text(_labels[key] ?? key,
-                        style: const TextStyle(fontSize: 14)),
+                    title: Text(
+                      _labels[key] ?? key,
+                      style: const TextStyle(fontSize: 14),
+                    ),
                     value: _selected[key],
                     onChanged: (val) => _toggleItem(key, val),
                     dense: true,

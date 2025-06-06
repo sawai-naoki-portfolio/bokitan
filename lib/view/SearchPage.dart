@@ -1,4 +1,5 @@
 import 'package:bookkeeping_vocabulary_notebook/utility/ResponsiveSizes.dart';
+import 'package:bookkeeping_vocabulary_notebook/view/test_page/siwake_test/JournalEntryQuizWidget.dart';
 import 'package:bookkeeping_vocabulary_notebook/view/widget/ProductCard.dart';
 import 'package:bookkeeping_vocabulary_notebook/view/widget/showProductDialog.dart';
 import 'package:flutter/material.dart';
@@ -241,6 +242,33 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                                           style: TextStyle(
                                               fontSize:
                                                   context.fontSizeMedium))),
+                                ],
+                              ),
+                            ),
+                          ),
+                          const Divider(height: 1),
+
+                          InkWell(
+                            onTap: () {
+                              Navigator.pop(context);
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (_) =>
+                                        const JournalEntryQuizPage()),
+                              );
+                            },
+                            child: Container(
+                              padding: EdgeInsets.symmetric(
+                                  vertical: context.paddingMedium,
+                                  horizontal: context.paddingSmall),
+                              child: const Row(
+                                children: [
+                                  Icon(Icons.sort, color: Colors.blue),
+                                  SizedBox(width: 16),
+                                  Expanded(
+                                      child: Text("仕訳問題",
+                                          style: TextStyle(fontSize: 16))),
                                 ],
                               ),
                             ),

@@ -151,7 +151,7 @@ class CategorySelectionPageState extends ConsumerState<CategorySelectionPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text("リストリスト"),
+        title: const Text("リスト"),
         centerTitle: true,
         actions: [
           if (_isReordering)

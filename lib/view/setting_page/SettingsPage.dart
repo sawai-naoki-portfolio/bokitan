@@ -3,7 +3,6 @@ import 'package:bookkeeping_vocabulary_notebook/utility/ResponsiveSizes.dart';
 import 'package:flutter/material.dart';
 
 import '../WordListPage.dart';
-import '../test_page/siwake_test/JournalEntryQuizWidget.dart';
 import 'CacheClearScreen.dart';
 import 'FeedbackPage.dart';
 import 'MemoListPage.dart';
@@ -131,29 +130,6 @@ class SettingsPage extends StatelessWidget {
           ),
 
           const Divider(),
-          // メモセクション
-          Padding(
-            padding: EdgeInsets.all(context.paddingMedium),
-            child: Text(
-              "仕訳問題",
-              style: TextStyle(
-                fontSize: context.fontSizeLarge,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-          ListTile(
-            leading: const Icon(Icons.memory),
-            title: const Text("仕訳問題"),
-            trailing: const Icon(Icons.arrow_forward),
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const JournalEntryQuizPage()),
-              );
-            },
-          ),
-          const Divider(),
 
           // セキュリティとプライバシーポリシーセクション
           Padding(
@@ -166,17 +142,6 @@ class SettingsPage extends StatelessWidget {
               ),
             ),
           ),
-          // ListTile(
-          //   leading: const Icon(Icons.help),
-          //   title: const Text("ヘルプ"),
-          //   trailing: const Icon(Icons.arrow_forward),
-          //   onTap: () {
-          //     Navigator.push(
-          //       context,
-          //       MaterialPageRoute(builder: (_) => const HelpPage()),
-          //     );
-          //   },
-          // ),
           ListTile(
             leading: const Icon(Icons.description),
             title: const Text("プライバシーポリシー"),

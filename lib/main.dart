@@ -559,6 +559,7 @@ class _AddEditSchedulePageState extends ConsumerState<AddEditSchedulePage> {
                     },
                   ),
                 ),
+                // AddEditSchedulePage 内の "受験日として設定する" のラジオボタン部分
                 Expanded(
                   child: RadioListTile<ScheduleMode>(
                     title: const Text("受験日として設定する"),
@@ -566,19 +567,21 @@ class _AddEditSchedulePageState extends ConsumerState<AddEditSchedulePage> {
                     groupValue: _selectedMode,
                     onChanged: (value) async {
                       if (value == ScheduleMode.exam) {
-                        // まず現在のスケジュール一覧を取得
+                        // 現在のスケジュール一覧を取得
                         final schedules = ref.read(scheduleProvider);
-                        // 受験日として設定されているスケジュール件数をカウント
-                        int examCount =
-                            schedules.where((e) => e.isExamDate).length;
-
-                        // 新規作成の場合：既に3件以上設定されているなら追加不可
+                        final now = DateTime.now();
+                        // ※ここで、未来（今以降）の受験日スケジュールのみをカウント
+                        int examCount = schedules
+                            .where(
+                                (e) => e.isExamDate && e.startTime.isAfter(now))
+                            .length;
+                        // 新規作成の場合：すでに未来の受験日スケジュールが3件以上なら、追加不可
                         if (widget.scheduleItem == null && examCount >= 3) {
                           await showDialog(
                             context: context,
                             builder: (_) => AlertDialog(
                               title: const Text("受験日の設定制限"),
-                              content: const Text("受験日の設定は最大で3件までです。"),
+                              content: const Text("カレンダー上の受験日は3件まで設定可能です。"),
                               actions: [
                                 TextButton(
                                   onPressed: () => Navigator.pop(context),
@@ -589,8 +592,9 @@ class _AddEditSchedulePageState extends ConsumerState<AddEditSchedulePage> {
                           );
                           return;
                         }
-                        // 編集の場合：既存スケジュールが受験日でなければ（つまりstudyから変更する場合）、
-                        // 他の受験日スケジュールの件数が3件以上なら変更不可
+                        // 編集の場合：
+                        // 既存のスケジュールが受験日ではない状態から変更しようとする場合、
+                        // 他の未来の受験日スケジュールの件数が既に3件以上なら変更不可
                         if (widget.scheduleItem != null &&
                             !widget.scheduleItem!.isExamDate &&
                             examCount >= 3) {
@@ -598,7 +602,7 @@ class _AddEditSchedulePageState extends ConsumerState<AddEditSchedulePage> {
                             context: context,
                             builder: (_) => AlertDialog(
                               title: const Text("受験日の設定制限"),
-                              content: const Text("受験日の設定は最大で3件までです。"),
+                              content: const Text("カレンダー上の受験日は3件まで設定可能です。"),
                               actions: [
                                 TextButton(
                                   onPressed: () => Navigator.pop(context),
@@ -610,7 +614,7 @@ class _AddEditSchedulePageState extends ConsumerState<AddEditSchedulePage> {
                           return;
                         }
                       }
-                      // 上記のチェックを問題なく通過した場合のみ、モードを切り替える
+                      // チェックを問題なく通過した場合のみモードを切り替える
                       setState(() {
                         _selectedMode = value!;
                       });
@@ -806,7 +810,6 @@ class _AddEditSchedulePageState extends ConsumerState<AddEditSchedulePage> {
                             final description =
                                 _descriptionController.text.trim();
                             if (title.isEmpty ||
-                                description.isEmpty ||
                                 _startTime == null ||
                                 (_selectedMode == ScheduleMode.study &&
                                     _endTime == null)) {
@@ -881,6 +884,7 @@ class MyApp extends ConsumerWidget {
     final themeMode = ref.watch(themeProvider);
     final useMaterial3 = ref.watch(useMaterial3Provider);
     return MaterialApp(
+      debugShowCheckedModeBanner: false,
       title: '単語検索＆保存アプリ',
       theme: ThemeData(
         fontFamily: 'Murecho',
