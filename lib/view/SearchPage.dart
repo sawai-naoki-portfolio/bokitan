@@ -69,7 +69,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                 title: const Text("保存する"),
                 onTap: () {
                   Navigator.pop(context);
-                  // カテゴリーへの自動割当画面等の表示
+                  // リストへの自動割当画面等の表示
                   showModalBottomSheet(
                     context: context,
                     builder: (context) =>
@@ -130,7 +130,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
               onPressed: () {
                 // メニュー表示時にもキーボードフォーカスを解除
                 FocusScope.of(context).unfocus();
-                // 下部モーダルシートで各種機能（保存一覧、カテゴリー、クイズ、設定など）へ遷移
+                // 下部モーダルシートで各種機能（保存一覧、リスト、クイズ、設定など）へ遷移
                 showModalBottomSheet(
                   context: context,
                   backgroundColor: Colors.transparent,
@@ -209,7 +209,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                                   const Icon(Icons.folder, color: Colors.blue),
                                   context.horizontalSpaceMedium,
                                   Expanded(
-                                      child: Text("カテゴリーリスト",
+                                      child: Text("マイリスト",
                                           style: TextStyle(
                                               fontSize:
                                                   context.fontSizeMedium))),
@@ -282,7 +282,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                                 context,
                                 MaterialPageRoute(
                                     builder: (_) =>
-                                    const ScheduleManagementPage()),
+                                        const ScheduleManagementPage()),
                               );
                             },
                             child: Container(

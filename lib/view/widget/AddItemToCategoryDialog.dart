@@ -3,7 +3,7 @@
 // -----------------------------------------------------------------------------
 // このウィジェットは、「カテゴリ内に新たに単語を追加」するためのダイアログです。
 // ・全単語の中から、既にそのカテゴリに登録されていない商品を対象に自動補完（Autocomplete）で検索
-// ・ユーザーが候補をタップすると、該当カテゴリーに自動で商品が追加されます。
+// ・ユーザーが候補をタップすると、該当リストに自動で商品が追加されます。
 // ============================================================================
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -15,7 +15,7 @@ import '../../utility/Category.dart';
 class AddItemToCategoryDialog extends ConsumerWidget {
   final Category category;
 
-  /// [category] - 商品を追加する対象のカテゴリー情報
+  /// [category] - 商品を追加する対象のリスト情報
   const AddItemToCategoryDialog({super.key, required this.category});
 
   @override

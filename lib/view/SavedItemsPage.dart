@@ -16,7 +16,7 @@ import 'category_page/CategoryAssignmentSheet.dart';
 //////////////////////////////////////////////
 // 保存した単語（お気に入りなど）を一覧表示する画面です。
 // 各商品（ProductCard）のタップ・スワイプ、長押しアクションから詳細ダイアログや
-// カテゴリー割当、単語チェック問題登録などの操作を実行できます。
+// リスト割当、単語チェック問題登録などの操作を実行できます。
 class SavedItemsPage extends ConsumerWidget {
   const SavedItemsPage({super.key});
 
@@ -72,7 +72,7 @@ class SavedItemsPage extends ConsumerWidget {
                 },
                 child: GestureDetector(
                   onLongPress: () {
-                    // 長押し時はカテゴリー割当ウィジェット表示などを実行
+                    // 長押し時はリスト割当ウィジェット表示などを実行
                     showModalBottomSheet(
                       context: context,
                       builder: (context) => SafeArea(

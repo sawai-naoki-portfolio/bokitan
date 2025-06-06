@@ -7,7 +7,7 @@ import '../utility/Category.dart';
 
 /// ---------------------------------------------------------------------------
 /// CategoriesNotifier
-/// ─ カテゴリーの作成、更新、削除および単語の所属更新、並び替えを管理する
+/// ─ リストの作成、更新、削除および単語の所属更新、並び替えを管理する
 /// ---------------------------------------------------------------------------
 class CategoriesNotifier extends StateNotifier<List<Category>> {
   CategoriesNotifier() : super([]) {

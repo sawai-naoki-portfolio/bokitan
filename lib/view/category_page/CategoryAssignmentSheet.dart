@@ -2,7 +2,7 @@
 // CategoryAssignmentSheet
 // -----------------------------------------------------------------------------
 // CategoryAssignmentSheet は、指定された商品（Product）に対して、
-// ・どのカテゴリーに所属させるか（チェックボックスで複数選択可能）
+// ・どのリストに所属させるか（チェックボックスで複数選択可能）
 // ・「保存済み」にするかどうか
 // の割り当て状態を設定するためのモーダルシートです。
 // ============================================================================
@@ -18,7 +18,7 @@ import '../../utility/Product.dart';
 class CategoryAssignmentSheet extends ConsumerStatefulWidget {
   final Product product;
 
-  /// [product] - カテゴリー割当の対象商品
+  /// [product] - リスト割当の対象商品
   const CategoryAssignmentSheet({super.key, required this.product});
 
   @override
@@ -28,13 +28,13 @@ class CategoryAssignmentSheet extends ConsumerStatefulWidget {
 // ============================================================================
 // CategoryAssignmentSheetState
 // -----------------------------------------------------------------------------
-// CategoryAssignmentSheetState において、既存のカテゴリー割当情報と
+// CategoryAssignmentSheetState において、既存のリスト割当情報と
 // 保存状態をローカルに保持し、ユーザーがチェックを変更した結果を反映後、
 // 「完了」ボタンを押すとそれぞれのプロバイダーに更新を通知します。
 // ============================================================================
 class CategoryAssignmentSheetState
     extends ConsumerState<CategoryAssignmentSheet> {
-  /// 各カテゴリー名と、該当商品がそのカテゴリーに所属しているかの状態（trueなら所属）
+  /// 各リスト名と、該当商品がそのリストに所属しているかの状態（trueなら所属）
   late Map<String, bool> _localAssignments;
 
   /// 商品が「保存単語」（お気に入り）に登録されているかの状態
@@ -43,7 +43,7 @@ class CategoryAssignmentSheetState
   @override
   void initState() {
     super.initState();
-    // 現在のカテゴリー割当情報をローカル状態として初期化
+    // 現在のリスト割当情報をローカル状態として初期化
     final currentCategories = ref.read(categoriesProvider);
     _localAssignments = {
       for (var cat in currentCategories)
@@ -64,12 +64,12 @@ class CategoryAssignmentSheetState
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // ヘッダ部分：対象商品の名称と「新規カテゴリー追加」ボタン
+            // ヘッダ部分：対象商品の名称と「新規リスト追加」ボタン
             Row(
               children: [
                 Expanded(
                   child: Text(
-                    "【${widget.product.name}】のカテゴリー割当",
+                    "【${widget.product.name}】のリスト割当",
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: context.fontSizeMedium,
@@ -78,20 +78,20 @@ class CategoryAssignmentSheetState
                 ),
                 TextButton.icon(
                   onPressed: () async {
-                    // 新しいカテゴリーを追加するダイアログを表示
+                    // 新しいリストを追加するダイアログを表示
                     final newCat = await showCategoryCreationDialog(context);
                     if (newCat != null && newCat.isNotEmpty) {
                       await ref
                           .read(categoriesProvider.notifier)
                           .addCategory(newCat);
                       setState(() {
-                        // 新規追加したカテゴリーは初期状態で未割当にする
+                        // 新規追加したリストは初期状態で未割当にする
                         _localAssignments[newCat] = false;
                       });
                     }
                   },
                   icon: const Icon(Icons.add),
-                  label: const Text("新規カテゴリーを追加"),
+                  label: const Text("新規リストを追加"),
                 ),
               ],
             ),
@@ -107,7 +107,7 @@ class CategoryAssignmentSheetState
               },
             ),
             const Divider(),
-            // カテゴリー一覧のチェックボックスリスト：各カテゴリーにこの商品を割り当てるか選択
+            // リスト一覧のチェックボックスリスト：各リストにこの商品を割り当てるか選択
             Flexible(
               child: ListView.builder(
                 shrinkWrap: true,
@@ -134,7 +134,7 @@ class CategoryAssignmentSheetState
                 minimumSize: const Size(double.infinity, 48),
               ),
               onPressed: () async {
-                // 各カテゴリーについて、ローカル状態に応じて商品割当の更新を実行
+                // 各リストについて、ローカル状態に応じて商品割当の更新を実行
                 for (var entry in _localAssignments.entries) {
                   await ref
                       .read(categoriesProvider.notifier)

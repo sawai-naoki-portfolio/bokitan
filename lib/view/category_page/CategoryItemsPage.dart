@@ -51,7 +51,7 @@ class CategoryItemsPageState extends ConsumerState<CategoryItemsPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text("カテゴリー: $categoryName"),
+        title: Text("リスト: $categoryName"),
         centerTitle: true,
         actions: [
           if (_isSorting)
@@ -67,7 +67,7 @@ class CategoryItemsPageState extends ConsumerState<CategoryItemsPage> {
         ],
       ),
       body: filtered.isEmpty
-          ? const Center(child: Text("このカテゴリーに単語はありません"))
+          ? const Center(child: Text("このリストに単語はありません"))
           : _isSorting
               ? _buildSortingList(filtered, categoryName) // 並び替えモード表示
               : _buildNormalList(filtered, categoryName), // 通常リスト表示
@@ -91,7 +91,7 @@ class CategoryItemsPageState extends ConsumerState<CategoryItemsPage> {
                   context: context,
                   builder: (context) => AlertDialog(
                     title: const Text("削除確認"),
-                    content: Text("${product.name} をカテゴリーから削除してよろしいですか？"),
+                    content: Text("${product.name} をリストから削除してよろしいですか？"),
                     actions: [
                       TextButton(
                         onPressed: () => Navigator.pop(context, false),

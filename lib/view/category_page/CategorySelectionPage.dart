@@ -11,9 +11,9 @@ import 'CategoryItemsPage.dart';
 //////////////////////////////////////////////
 // CategorySelectionPage
 //////////////////////////////////////////////
-// 登録済みのカテゴリー一覧を表示する画面です。
-// ユーザーはカテゴリーごとに保存された単語のリストを見るため、
-// 各カテゴリーカードをタップして CategoryItemsPage へ遷移できます。
+// 登録済みのリスト一覧を表示する画面です。
+// ユーザーはリストごとに保存された単語のリストを見るため、
+// 各リストカードをタップして CategoryItemsPage へ遷移できます。
 class CategorySelectionPage extends ConsumerStatefulWidget {
   const CategorySelectionPage({super.key});
 
@@ -24,9 +24,9 @@ class CategorySelectionPage extends ConsumerStatefulWidget {
 // ============================================================================
 // CategorySelectionPageState
 // -----------------------------------------------------------------------------
-// この状態クラスは「カテゴリー一覧画面」内で表示するカテゴリーのリストを管理します。
-// ・通常表示モードでは、各カテゴリーをリスト表示し、スワイプで削除や長押しでオプションを起動します。
-// ・並び替えモードでは、ドラッグ＆ドロップでカテゴリーの順序を変更できるようにします。
+// この状態クラスは「リスト一覧画面」内で表示するリストのリストを管理します。
+// ・通常表示モードでは、各リストをリスト表示し、スワイプで削除や長押しでオプションを起動します。
+// ・並び替えモードでは、ドラッグ＆ドロップでリストの順序を変更できるようにします。
 // ============================================================================
 class CategorySelectionPageState extends ConsumerState<CategorySelectionPage> {
   /// 並び替えモードかどうかを示すフラグ（trueならドラッグ＆ドロップで順序変更可能）
@@ -34,7 +34,7 @@ class CategorySelectionPageState extends ConsumerState<CategorySelectionPage> {
 
   @override
   Widget build(BuildContext context) {
-    // プロバイダーから現在のカテゴリー一覧を取得
+    // プロバイダーから現在のリスト一覧を取得
     final categories = ref.watch(categoriesProvider);
     Widget listWidget;
 
@@ -44,7 +44,7 @@ class CategorySelectionPageState extends ConsumerState<CategorySelectionPage> {
         padding: EdgeInsets.symmetric(vertical: context.paddingMedium),
         itemCount: categories.length,
         onReorder: (oldIndex, newIndex) async {
-          // ドラッグ操作後、カテゴリーの新しい順序を更新する
+          // ドラッグ操作後、リストの新しい順序を更新する
           if (newIndex > oldIndex) newIndex--;
           await ref
               .read(categoriesProvider.notifier)
@@ -61,7 +61,7 @@ class CategorySelectionPageState extends ConsumerState<CategorySelectionPage> {
             title: Text(cat.name),
             subtitle: Text("登録済み単語数: ${cat.products.length}"),
             onTap: () {
-              // タップすると、該当カテゴリーの詳細（カテゴリーに属する単語一覧）画面へ遷移
+              // タップすると、該当リストの詳細（リストに属する単語一覧）画面へ遷移
               Navigator.push(
                 context,
                 MaterialPageRoute(
@@ -73,7 +73,7 @@ class CategorySelectionPageState extends ConsumerState<CategorySelectionPage> {
         },
       );
     } else {
-      // 【通常モード】：ListView でカテゴリー一覧を表示し、各リスト項目にスワイプ／タップ／長押し操作を埋め込む
+      // 【通常モード】：ListView でリスト一覧を表示し、各リスト項目にスワイプ／タップ／長押し操作を埋め込む
       listWidget = ListView.builder(
         padding: EdgeInsets.symmetric(vertical: context.paddingMedium),
         itemCount: categories.length,
@@ -87,7 +87,7 @@ class CategorySelectionPageState extends ConsumerState<CategorySelectionPage> {
                     context: context,
                     builder: (context) => AlertDialog(
                       title: const Text("削除確認"),
-                      content: Text("カテゴリー『${cat.name}』を削除してよろしいですか？"),
+                      content: Text("リスト『${cat.name}』を削除してよろしいですか？"),
                       actions: [
                         TextButton(
                           onPressed: () => Navigator.pop(context, false),
@@ -102,7 +102,7 @@ class CategorySelectionPageState extends ConsumerState<CategorySelectionPage> {
                   ) ??
                   false;
             },
-            // スワイプ後にカテゴリーを削除する
+            // スワイプ後にリストを削除する
             onDismissed: () async {
               await ref
                   .read(categoriesProvider.notifier)
@@ -113,7 +113,7 @@ class CategorySelectionPageState extends ConsumerState<CategorySelectionPage> {
               subtitle: Text("登録済み単語数: ${cat.products.length}"),
               trailing: const Icon(Icons.arrow_forward),
               onTap: () {
-                // タップでカテゴリー内の単語一覧へ遷移
+                // タップでリスト内の単語一覧へ遷移
                 Navigator.push(
                   context,
                   MaterialPageRoute(
@@ -121,7 +121,7 @@ class CategorySelectionPageState extends ConsumerState<CategorySelectionPage> {
                   ),
                 );
               },
-              // 長押しでカテゴリーの操作（リネーム、削除、並び替え）モーダルを表示
+              // 長押しでリストの操作（リネーム、削除、並び替え）モーダルを表示
               onLongPress: () {
                 _showCategoryOptions(cat);
               },
@@ -133,7 +133,7 @@ class CategorySelectionPageState extends ConsumerState<CategorySelectionPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text("カテゴリーリスト"),
+        title: const Text("マイリスト"),
         centerTitle: true,
         actions: [
           // 並び替えモード中は「完了」ボタンを表示して通常モードへ戻す
@@ -149,7 +149,7 @@ class CategorySelectionPageState extends ConsumerState<CategorySelectionPage> {
         ],
       ),
       body: listWidget,
-      // FloatingActionButton：新規カテゴリーを追加するためのダイアログを起動
+      // FloatingActionButton：新規リストを追加するためのダイアログを起動
       floatingActionButton: FloatingActionButton(
         onPressed: () async {
           String? newCat = await showCategoryCreationDialog(context);
@@ -162,7 +162,7 @@ class CategorySelectionPageState extends ConsumerState<CategorySelectionPage> {
     );
   }
 
-  /// カテゴリー長押し時に表示するオプションメニュー（リネーム／削除／並び替え）の表示処理
+  /// リスト長押し時に表示するオプションメニュー（リネーム／削除／並び替え）の表示処理
   void _showCategoryOptions(Category cat) {
     showModalBottomSheet(
       context: context,
@@ -179,7 +179,7 @@ class CategorySelectionPageState extends ConsumerState<CategorySelectionPage> {
                   _showRenameCategoryDialog(cat);
                 },
               ),
-              // カテゴリー削除オプション
+              // リスト削除オプション
               ListTile(
                 leading: const Icon(Icons.delete),
                 title: const Text("リスト削除"),
@@ -189,7 +189,7 @@ class CategorySelectionPageState extends ConsumerState<CategorySelectionPage> {
                     context: context,
                     builder: (context) => AlertDialog(
                       title: const Text("リスト削除"),
-                      content: Text("カテゴリー『${cat.name}』を削除してよろしいですか？"),
+                      content: Text("リスト『${cat.name}』を削除してよろしいですか？"),
                       actions: [
                         TextButton(
                           onPressed: () => Navigator.pop(context, false),
@@ -227,7 +227,7 @@ class CategorySelectionPageState extends ConsumerState<CategorySelectionPage> {
     );
   }
 
-  /// カテゴリー名の変更用ダイアログを表示し、入力された新しい名前で更新する処理
+  /// リスト名の変更用ダイアログを表示し、入力された新しい名前で更新する処理
   void _showRenameCategoryDialog(Category cat) {
     final TextEditingController controller =
         TextEditingController(text: cat.name);

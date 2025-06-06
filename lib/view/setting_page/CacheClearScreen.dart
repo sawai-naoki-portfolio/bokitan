@@ -24,7 +24,7 @@ class CacheClearScreenState extends State<CacheClearScreen> {
   final Map<String, String> _labels = {
     'search_history': '検索履歴',
     'mistake_counts': 'ミス回数',
-    'saved_categories': 'カテゴリー',
+    'saved_categories': 'リスト',
     'saved_items': '保存単語',
     'memo_list': 'メモ一覧',
   };

@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 
 /// ---------------------------------------------------------------------------
 /// showCategoryCreationDialog
-/// ─ 新規カテゴリーを作成するためのシンプルな入力ダイアログを表示する
+/// ─ 新規リストを作成するためのシンプルな入力ダイアログを表示する
 /// ---------------------------------------------------------------------------
 Future<String?> showCategoryCreationDialog(BuildContext context) async {
   String temp = "";
@@ -11,10 +11,10 @@ Future<String?> showCategoryCreationDialog(BuildContext context) async {
     context: context,
     builder: (context) {
       return AlertDialog(
-        title: const Text("新規カテゴリーの作成"),
+        title: const Text("新規リストの作成"),
         content: TextField(
           onChanged: (value) => temp = value,
-          decoration: const InputDecoration(hintText: "カテゴリー名"),
+          decoration: const InputDecoration(hintText: "リスト名"),
         ),
         actions: [
           TextButton(
