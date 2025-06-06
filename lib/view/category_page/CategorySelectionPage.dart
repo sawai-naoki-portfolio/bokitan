@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../provider/categoriesProvider.dart';
 import '../../utility/Category.dart';
 import '../../utility/SwipeToDeleteCard.dart';
+import '../SavedItemsPage.dart';
 import 'CategoryItemsPage.dart';
 
 //////////////////////////////////////////////
@@ -29,114 +30,130 @@ class CategorySelectionPage extends ConsumerStatefulWidget {
 // ・並び替えモードでは、ドラッグ＆ドロップでリストの順序を変更できるようにします。
 // ============================================================================
 class CategorySelectionPageState extends ConsumerState<CategorySelectionPage> {
-  /// 並び替えモードかどうかを示すフラグ（trueならドラッグ＆ドロップで順序変更可能）
   bool _isReordering = false;
 
   @override
   Widget build(BuildContext context) {
     // プロバイダーから現在のリスト一覧を取得
     final categories = ref.watch(categoriesProvider);
-    Widget listWidget;
 
+    // 固定の「保存単語一覧」タイル（デフォルト表示）
+    final Widget defaultSavedItemsTile = ListTile(
+      key: const ValueKey("saved_items_default"),
+      leading: const Icon(Icons.bookmark),
+      title: const Text("保存単語一覧"),
+      subtitle: const Text("保存された単語を表示します"),
+      trailing: const Icon(Icons.arrow_forward),
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const SavedItemsPage()),
+        );
+      },
+    );
+
+    Widget listWidget;
     if (_isReordering) {
-      // 【並び替えモード】：ReorderableListView を利用してドラッグ＆ドロップ操作を可能にする
-      listWidget = ReorderableListView.builder(
-        padding: EdgeInsets.symmetric(vertical: context.paddingMedium),
-        itemCount: categories.length,
-        onReorder: (oldIndex, newIndex) async {
-          // ドラッグ操作後、リストの新しい順序を更新する
-          if (newIndex > oldIndex) newIndex--;
-          await ref
-              .read(categoriesProvider.notifier)
-              .reorderCategories(oldIndex, newIndex);
-        },
-        itemBuilder: (context, index) {
-          final cat = categories[index];
-          return ListTile(
-            key: ValueKey(cat.name),
-            leading: ReorderableDragStartListener(
-              index: index,
-              child: const Icon(Icons.drag_handle),
-            ),
-            title: Text(cat.name),
-            subtitle: Text("登録済み単語数: ${cat.products.length}"),
-            onTap: () {
-              // タップすると、該当リストの詳細（リストに属する単語一覧）画面へ遷移
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => CategoryItemsPage(category: cat),
-                ),
-              );
-            },
-          );
-        },
-      );
-    } else {
-      // 【通常モード】：ListView でリスト一覧を表示し、各リスト項目にスワイプ／タップ／長押し操作を埋め込む
-      listWidget = ListView.builder(
-        padding: EdgeInsets.symmetric(vertical: context.paddingMedium),
-        itemCount: categories.length,
-        itemBuilder: (context, index) {
-          final cat = categories[index];
-          return SwipeToDeleteCard(
-            keyValue: ValueKey(cat.name),
-            // スワイプしたときに削除確認ダイアログを表示
-            onConfirm: () async {
-              return await showDialog<bool>(
-                    context: context,
-                    builder: (context) => AlertDialog(
-                      title: const Text("削除確認"),
-                      content: Text("リスト『${cat.name}』を削除してよろしいですか？"),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(context, false),
-                          child: const Text("キャンセル"),
-                        ),
-                        ElevatedButton(
-                          onPressed: () => Navigator.pop(context, true),
-                          child: const Text("削除"),
-                        ),
-                      ],
-                    ),
-                  ) ??
-                  false;
-            },
-            // スワイプ後にリストを削除する
-            onDismissed: () async {
-              await ref
-                  .read(categoriesProvider.notifier)
-                  .deleteCategory(cat.name);
-            },
-            child: ListTile(
-              title: Text(cat.name),
-              subtitle: Text("登録済み単語数: ${cat.products.length}"),
-              trailing: const Icon(Icons.arrow_forward),
-              onTap: () {
-                // タップでリスト内の単語一覧へ遷移
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => CategoryItemsPage(category: cat),
+      // 並び替えモードの場合、固定のタイルはリスト上部に固定表示し、
+      // 以降のユーザー登録リストはReorderableListViewで管理する
+      listWidget = Column(
+        children: [
+          defaultSavedItemsTile,
+          Expanded(
+            child: ReorderableListView.builder(
+              padding: EdgeInsets.symmetric(vertical: context.paddingMedium),
+              itemCount: categories.length,
+              onReorder: (oldIndex, newIndex) async {
+                if (newIndex > oldIndex) newIndex--;
+                await ref
+                    .read(categoriesProvider.notifier)
+                    .reorderCategories(oldIndex, newIndex);
+              },
+              itemBuilder: (context, index) {
+                final cat = categories[index];
+                return ListTile(
+                  key: ValueKey(cat.name),
+                  leading: ReorderableDragStartListener(
+                    index: index,
+                    child: const Icon(Icons.drag_handle),
                   ),
+                  title: Text(cat.name),
+                  subtitle: Text("登録済み単語数: ${cat.products.length}"),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) => CategoryItemsPage(category: cat)),
+                    );
+                  },
                 );
               },
-              // 長押しでリストの操作（リネーム、削除、並び替え）モーダルを表示
-              onLongPress: () {
-                _showCategoryOptions(cat);
-              },
             ),
-          );
-        },
+          ),
+        ],
+      );
+    } else {
+      // 通常モードの場合：固定の「保存単語一覧」タイルの後にリスト表示する
+      listWidget = ListView(
+        padding: EdgeInsets.symmetric(vertical: context.paddingMedium),
+        children: [
+          defaultSavedItemsTile,
+          const Divider(),
+          ...categories
+              .map((cat) => SwipeToDeleteCard(
+                    keyValue: ValueKey(cat.name),
+                    onConfirm: () async {
+                      return await showDialog<bool>(
+                            context: context,
+                            builder: (context) => AlertDialog(
+                              title: const Text("削除確認"),
+                              content: Text("リスト『${cat.name}』を削除してよろしいですか？"),
+                              actions: [
+                                TextButton(
+                                  onPressed: () =>
+                                      Navigator.pop(context, false),
+                                  child: const Text("キャンセル"),
+                                ),
+                                ElevatedButton(
+                                  onPressed: () => Navigator.pop(context, true),
+                                  child: const Text("削除"),
+                                ),
+                              ],
+                            ),
+                          ) ??
+                          false;
+                    },
+                    onDismissed: () async {
+                      await ref
+                          .read(categoriesProvider.notifier)
+                          .deleteCategory(cat.name);
+                    },
+                    child: ListTile(
+                      title: Text(cat.name),
+                      subtitle: Text("登録済み単語数: ${cat.products.length}"),
+                      trailing: const Icon(Icons.arrow_forward),
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (_) => CategoryItemsPage(category: cat)),
+                        );
+                      },
+                      onLongPress: () {
+                        _showCategoryOptions(cat);
+                      },
+                    ),
+                  ))
+              .toList(),
+        ],
       );
     }
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text("マイリスト"),
+        title: const Text("リストリスト"),
         centerTitle: true,
         actions: [
-          // 並び替えモード中は「完了」ボタンを表示して通常モードへ戻す
           if (_isReordering)
             IconButton(
               icon: const Icon(Icons.check),
@@ -145,11 +162,10 @@ class CategorySelectionPageState extends ConsumerState<CategorySelectionPage> {
                   _isReordering = false;
                 });
               },
-            ),
+            )
         ],
       ),
       body: listWidget,
-      // FloatingActionButton：新規リストを追加するためのダイアログを起動
       floatingActionButton: FloatingActionButton(
         onPressed: () async {
           String? newCat = await showCategoryCreationDialog(context);
@@ -162,7 +178,7 @@ class CategorySelectionPageState extends ConsumerState<CategorySelectionPage> {
     );
   }
 
-  /// リスト長押し時に表示するオプションメニュー（リネーム／削除／並び替え）の表示処理
+  // ※既存の _showCategoryOptions(cat) メソッドはそのまま利用
   void _showCategoryOptions(Category cat) {
     showModalBottomSheet(
       context: context,
@@ -170,7 +186,6 @@ class CategorySelectionPageState extends ConsumerState<CategorySelectionPage> {
         return SafeArea(
           child: Wrap(
             children: [
-              // リネームオプション
               ListTile(
                 leading: const Icon(Icons.edit),
                 title: const Text("リスト名の変更"),
@@ -179,7 +194,6 @@ class CategorySelectionPageState extends ConsumerState<CategorySelectionPage> {
                   _showRenameCategoryDialog(cat);
                 },
               ),
-              // リスト削除オプション
               ListTile(
                 leading: const Icon(Icons.delete),
                 title: const Text("リスト削除"),
@@ -209,7 +223,6 @@ class CategorySelectionPageState extends ConsumerState<CategorySelectionPage> {
                   }
                 },
               ),
-              // 並び替えモードへの移行オプション
               ListTile(
                 leading: const Icon(Icons.sort),
                 title: const Text("並び替え"),
@@ -227,7 +240,6 @@ class CategorySelectionPageState extends ConsumerState<CategorySelectionPage> {
     );
   }
 
-  /// リスト名の変更用ダイアログを表示し、入力された新しい名前で更新する処理
   void _showRenameCategoryDialog(Category cat) {
     final TextEditingController controller =
         TextEditingController(text: cat.name);

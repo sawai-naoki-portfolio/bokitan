@@ -160,35 +160,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                                   fontWeight: FontWeight.bold),
                             ),
                           ),
-                          const Divider(height: 1),
-                          // 既存項目
-                          InkWell(
-                            onTap: () {
-                              Navigator.pop(context);
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                    builder: (_) => const SavedItemsPage()),
-                              );
-                            },
-                            child: Container(
-                              padding: EdgeInsets.symmetric(
-                                  vertical: context.paddingMedium,
-                                  horizontal: context.paddingSmall),
-                              child: Row(
-                                children: [
-                                  const Icon(Icons.bookmark,
-                                      color: Colors.blue),
-                                  context.horizontalSpaceSmall,
-                                  Expanded(
-                                      child: Text("保存単語",
-                                          style: TextStyle(
-                                              fontSize:
-                                                  context.fontSizeMedium))),
-                                ],
-                              ),
-                            ),
-                          ),
+
                           const Divider(height: 1),
                           InkWell(
                             onTap: () {
@@ -209,7 +181,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                                   const Icon(Icons.folder, color: Colors.blue),
                                   context.horizontalSpaceMedium,
                                   Expanded(
-                                      child: Text("マイリスト",
+                                      child: Text("単語マイリスト",
                                           style: TextStyle(
                                               fontSize:
                                                   context.fontSizeMedium))),
