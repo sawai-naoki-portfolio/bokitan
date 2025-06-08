@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -8,6 +7,43 @@ import 'package:intl/intl.dart';
 import 'package:math_expressions/math_expressions.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
+
+class JournalQuizFilterNotifier extends StateNotifier<Set<String>> {
+  // 初期状態として全て有効な状態
+  JournalQuizFilterNotifier() : super({"簿記3級-商業簿記", "簿記2級-商業簿記", "簿記2級-工業簿記"}) {
+    _loadFilters();
+  }
+
+  Future<void> _loadFilters() async {
+    final prefs = await SharedPreferences.getInstance();
+    final jsonStr = prefs.getString("journal_quiz_filters");
+    if (jsonStr != null) {
+      final List<dynamic> list = jsonDecode(jsonStr);
+      state = list.map((e) => e.toString()).toSet();
+    }
+  }
+
+  Future<void> updateFilters(Set<String> newFilters) async {
+    state = newFilters;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString("journal_quiz_filters", jsonEncode(state.toList()));
+  }
+
+  Future<void> toggleFilter(String key, bool isSelected) async {
+    final newFilters = {...state};
+    if (isSelected) {
+      newFilters.add(key);
+    } else {
+      newFilters.remove(key);
+    }
+    await updateFilters(newFilters);
+  }
+}
+
+final journalQuizFilterProvider =
+    StateNotifierProvider<JournalQuizFilterNotifier, Set<String>>(
+  (ref) => JournalQuizFilterNotifier(),
+);
 
 // カンマ区切りで金額をフォーマットするTextInputFormatter
 class ThousandsSeparatorInputFormatter extends TextInputFormatter {
@@ -88,14 +124,16 @@ class JournalEntry {
 /// 仕訳問題（取引）のデータモデル
 class SortingProblem {
   final String id;
+  final String level; // 追加: level（例："簿記3級"、"簿記2級"）を保持
   final String transactionDate;
   final String description;
   final List<JournalEntry> entries;
   final String feedback;
-  final String bookkeepingType; // 新たに追加
+  final String bookkeepingType;
 
   SortingProblem({
     required this.id,
+    required this.level, // 新たに追加
     required this.transactionDate,
     required this.description,
     required this.entries,
@@ -107,11 +145,13 @@ class SortingProblem {
     final entriesJson = json['entries'] as List;
     return SortingProblem(
       id: json['id'] as String,
+      level: json['level'] as String,
+      // JSONの "level" プロパティを読み込む
       transactionDate: json['transaction_date'] as String,
       description: json['description'] as String,
       entries: entriesJson.map((e) => JournalEntry.fromJson(e)).toList(),
       feedback: json['feedback'] as String,
-      bookkeepingType: json['bookkeepingType'] as String, // ここで読み込む
+      bookkeepingType: json['bookkeepingType'] as String,
     );
   }
 }
@@ -749,23 +789,24 @@ class JournalEntryQuizPageState extends ConsumerState<JournalEntryQuizPage> {
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, stack) => Center(child: Text("エラー: $error")),
         data: (problems) {
-          List<SortingProblem> availableProblems;
-          if (filter != "ランダム") {
-            availableProblems =
-                problems.where((p) => p.bookkeepingType == filter).toList();
-          } else {
-            availableProblems = problems;
-          }
+// 例: JournalEntryQuizPage 内の問題フィルタリング
+          final allowedFilters =
+              ref.watch(journalQuizFilterProvider); // {"簿記3級-商業簿記", ...}
+          List<SortingProblem> availableProblems = problems.where((p) {
+            final combo = "${p.level}-${p.bookkeepingType}";
+            return allowedFilters.contains(combo);
+          }).toList();
+
           if (availableProblems.isEmpty) {
-            return Center(child: Text("「$filter」の問題はありません"));
+            return const Center(child: Text("選択された条件に一致する問題はありません"));
           }
-          if (!isQuizInitialized) {
-            availableProblems.shuffle(Random());
-            quizProblems = availableProblems.length >= 10
-                ? availableProblems.take(10).toList()
-                : availableProblems.toList();
-            isQuizInitialized = true;
-          }
+          // 以降、availableProblems からシャッフルしてクイズ問題を抽出する（例：10問）
+          availableProblems.shuffle();
+          quizProblems = availableProblems.length >= 10
+              ? availableProblems.take(10).toList()
+              : availableProblems.toList();
+          isQuizInitialized = true;
+
           final currentProblem = quizProblems[currentIndex];
           return SingleChildScrollView(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
