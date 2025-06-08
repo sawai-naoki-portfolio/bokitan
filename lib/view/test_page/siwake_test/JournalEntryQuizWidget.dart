@@ -789,23 +789,23 @@ class JournalEntryQuizPageState extends ConsumerState<JournalEntryQuizPage> {
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, stack) => Center(child: Text("エラー: $error")),
         data: (problems) {
-// 例: JournalEntryQuizPage 内の問題フィルタリング
-          final allowedFilters =
-              ref.watch(journalQuizFilterProvider); // {"簿記3級-商業簿記", ...}
-          List<SortingProblem> availableProblems = problems.where((p) {
-            final combo = "${p.level}-${p.bookkeepingType}";
-            return allowedFilters.contains(combo);
-          }).toList();
+          if (!isQuizInitialized) {
+            final allowedFilters = ref.watch(journalQuizFilterProvider);
+            List<SortingProblem> availableProblems = problems.where((p) {
+              final combo = "${p.level}-${p.bookkeepingType}";
+              return allowedFilters.contains(combo);
+            }).toList();
 
-          if (availableProblems.isEmpty) {
-            return const Center(child: Text("選択された条件に一致する問題はありません"));
+            if (availableProblems.isEmpty) {
+              return const Center(child: Text("選択された条件に一致する問題はありません"));
+            }
+
+            availableProblems.shuffle();
+            quizProblems = availableProblems.length >= 10
+                ? availableProblems.take(10).toList()
+                : availableProblems.toList();
+            isQuizInitialized = true;
           }
-          // 以降、availableProblems からシャッフルしてクイズ問題を抽出する（例：10問）
-          availableProblems.shuffle();
-          quizProblems = availableProblems.length >= 10
-              ? availableProblems.take(10).toList()
-              : availableProblems.toList();
-          isQuizInitialized = true;
 
           final currentProblem = quizProblems[currentIndex];
           return SingleChildScrollView(
